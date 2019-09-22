@@ -99,8 +99,11 @@ class Cart extends Model
             $aData['discount'] = $cartItem->discount;
             $aData['exp_date'] = date("M, Y", strtotime($cartItem->exp_date));
 
+            $company = $cartItem->company()->first();
+            $aData['company'] = ['id'=>$company['id'], 'name' =>$company['company_name']];
+
             $medicine = $cartItem->medicine;
-            $aData['medicine'] = ['strength' => $medicine->strength, 'brand_name' => $medicine->brand_name, 'type' => $medicine->medicineType->name];
+            $aData['medicine'] = ['strength' => $medicine->strength, 'brand_name' => $medicine->brand_name, 'type' => substr($medicine->medicineType->name, 0, 3)];
             $items[] = $aData;
         }
         $data['cart_items'] = $items;

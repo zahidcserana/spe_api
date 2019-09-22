@@ -93,4 +93,9 @@ class CartItem extends Model
 
         return ['success' => true, 'data' => $cartDetails];
     }
+
+  public function company()
+  {
+      return $this->belongsTo('App\Models\MedicineCompany');
+  }
 }
