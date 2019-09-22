@@ -52,6 +52,16 @@ class CartItem extends Model
         return $unitPrice;
     }
 
+    public function updatePrice($data, $item) {
+      $updateData = array(
+          'unit_price' => $data['item_price'],
+          'sub_total' => $item->quantity * $data['item_price'],
+          'updated_at' => date('Y-m-d H:i:s'),
+      );
+      $this::where('id', $item->id)->update($updateData);
+      return true;
+    }
+
     public function updateQuantity($data)
     {
         $cartItem = $this::where('id', $data['id'])->first();

@@ -70,6 +70,22 @@ class Cart extends Model
             return ['success' => false, 'error' => 'Invalid Cart Token!'];
         }
     }
+    public function priceUpdate($data)
+    {
+        $cartItemModel = new CartItem();
+        $item = $cartItemModel::where('id', $data['item_id'])->first();
+        if ($item) {
+            if ($cartItemModel->updatePrice($data, $item)) {
+                $this->updateCart($item->cart_id);
+                $cartDetails = $this->getCartDetails($item->cart_id);
+                return ['success' => true, 'data' => $cartDetails];
+            } else {
+                return ['success' => false, 'error' => 'Something went wrong!'];
+            }
+        } else {
+            return ['success' => false, 'error' => 'Invalid Item ID!'];
+        }
+    }
 
     public function getCartDetails($cartId)
     {

@@ -59,6 +59,18 @@ class CartController extends Controller
 
         return response()->json($cartUpdate);
     }
+    public function priceUpdate(Request $request){
+      $data = $request->all();
+
+      $this->validate($request, [
+          'item_id' => 'required',
+          'item_price' => 'required'
+      ]);
+      $cartModel = new Cart();
+      $cartUpdate = $cartModel->priceUpdate($data);
+
+      return response()->json($cartUpdate);
+    }
 
     public function deleteItem(Request $request)
     {
