@@ -51,6 +51,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('carts/{token}/check', ['uses' => 'CartController@tokenCheck']);
                 $router->post('carts/delete-item', ['uses' => 'CartController@deleteItem']);
                 $router->post('carts/quantity-update', ['uses' => 'CartController@quantityUpdate']);
+                $router->post('carts/price-update', ['uses' => 'CartController@priceUpdate']);
 
                 /** Sale Order */
                 $router->post('orders/sale', ['uses' => 'SaleController@create']);
