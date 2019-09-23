@@ -227,7 +227,7 @@ class SaleController extends Controller
         $query = $request->query();
 
         $pageNo = $request->query('page_no') ?? 1;
-        $limit = $request->query('limit') ?? 1000;
+        $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
         $where = array();
         $user = $request->auth;
@@ -259,7 +259,7 @@ class SaleController extends Controller
         $orderData = array();
         foreach ($orders as $order) {
             $aData = array();
-            $aData['sale_id'] = $order->id;
+            $aData['id'] = $order->id;
             $aData['customer_name'] = $order->customer_name;
             $aData['customer_mobile'] = $order->customer_mobile;
             $aData['invoice'] = $order->invoice;
@@ -267,8 +267,6 @@ class SaleController extends Controller
             $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
             //$aData['image'] = $order->file_name ? 'http://dgdaapi.local/assets/prescription_image/'. $order->file_name:'';
             $aData['image'] = $order->file_name ?? '';
-
-
             $orderData[] = $aData;
         }
 
@@ -288,7 +286,7 @@ class SaleController extends Controller
         $itemData = SaleItem::where('id', $data['item_id'])->first();
         $saleData = Sale::where('id', $itemData->sale_id)->first();
 
-        $medicineInfo = DB::table('inventory_details')->where('medicine_id', $itemData->medicine_id)->where('batch_no', $itemData->batch_no)->first();
+        $medicineInfo = DB::table('products')->where('medicine_id', $itemData->medicine_id)->where('batch_no', $itemData->batch_no)->first();
 
         $data['unit_type'] = $data['unit_type'] ?? 'PCS';
         $medicineCompany = new MedicineCompany();
