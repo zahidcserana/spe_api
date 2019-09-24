@@ -28,7 +28,7 @@ class CartItem extends Model
             'cart_id' => $data['cart_id'],
             'unit_type' => $data['unit_type'] ?? 'PCS',
             'unit_price' => $medicineInfo->mrp,
-            'sub_total' => $unitPrice * $data['quantity'],
+            'sub_total' => $medicineInfo->mrp * $data['quantity'],
         );
 
         $cartItem = CartItem::insertGetId($item);

@@ -240,11 +240,11 @@ class SaleController extends Controller
             $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
         }
         if (!empty($query['sale_date'])) {
-            $date = explode('GMT', $query['sale_date']);
-            $timestamp = strtotime($date[0]);
-            $saleDate = date('Y-m-d', $timestamp);
-
-            $query = Sale::where($where)->whereDate('created_at', '=', $saleDate);
+            // $date = explode('GMT', $query['sale_date']);
+            // $timestamp = strtotime($date[0]);
+            // $saleDate = date('Y-m-d', $timestamp);
+            $dateRange = explode(',',$query['sale_date']);
+            $query = Sale::where($where)->whereBetween('created_at', $dateRange);
 
         } else {
             $query = Sale::where($where);
