@@ -283,6 +283,7 @@ class OrderController extends Controller
         $orderAdd->purchase_date        = date('Y-m-d');
         $orderAdd->total_amount         = $details['total'];
         $orderAdd->tax                  = $details['vat'];
+        $orderAdd->tax_type             = $details['vat_percentage'];
         $orderAdd->discount             = $details['discount'];
         $orderAdd->sub_total            = $details['net_amount'];
         $orderAdd->total_payble_amount  = $details['net_amount'];
@@ -329,7 +330,6 @@ class OrderController extends Controller
                 $UpdateProduct->quantity            = $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
                 $UpdateProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
                 $UpdateProduct->batch_no            = $item['batch_no'];
-                $UpdateProduct->exp_date            = $item['exp_date'];
                 $UpdateProduct->company_id          = $company_id ? $company_id : 0;
                 $UpdateProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
                 $UpdateProduct->save();
@@ -341,7 +341,6 @@ class OrderController extends Controller
                 $InsertProduct->quantity            = $item['quantity'] * $item['piece_per_box'];
                 $InsertProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
                 $InsertProduct->batch_no            = $item['batch_no'];
-                $InsertProduct->exp_date            = $item['exp_date'];
                 $InsertProduct->company_id          = $company_id ? $company_id : 0;
                 $InsertProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
                 $InsertProduct->save();
