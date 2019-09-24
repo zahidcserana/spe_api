@@ -227,7 +227,7 @@ class SaleController extends Controller
         $query = $request->query();
 
         $pageNo = $request->query('page_no') ?? 1;
-        $limit = $request->query('limit') ?? 1000;
+        $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
         $where = array();
         $user = $request->auth;
@@ -240,11 +240,11 @@ class SaleController extends Controller
             $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
         }
         if (!empty($query['sale_date'])) {
-            $date = explode('GMT', $query['sale_date']);
-            $timestamp = strtotime($date[0]);
-            $saleDate = date('Y-m-d', $timestamp);
-
-            $query = Sale::where($where)->whereDate('created_at', '=', $saleDate);
+            // $date = explode('GMT', $query['sale_date']);
+            // $timestamp = strtotime($date[0]);
+            // $saleDate = date('Y-m-d', $timestamp);
+            $dateRange = explode(',',$query['sale_date']);
+            $query = Sale::where($where)->whereBetween('created_at', $dateRange);
 
         } else {
             $query = Sale::where($where);
@@ -259,7 +259,7 @@ class SaleController extends Controller
         $orderData = array();
         foreach ($orders as $order) {
             $aData = array();
-            $aData['sale_id'] = $order->id;
+            $aData['id'] = $order->id;
             $aData['customer_name'] = $order->customer_name;
             $aData['customer_mobile'] = $order->customer_mobile;
             $aData['invoice'] = $order->invoice;
@@ -267,8 +267,6 @@ class SaleController extends Controller
             $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
             //$aData['image'] = $order->file_name ? 'http://dgdaapi.local/assets/prescription_image/'. $order->file_name:'';
             $aData['image'] = $order->file_name ?? '';
-
-
             $orderData[] = $aData;
         }
 
@@ -283,23 +281,28 @@ class SaleController extends Controller
 
     public function update(Request $request)
     {
+        $user = $request->auth;
         $data = $request->all();
-        // $updateQuery['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_by'] = $user->id;
         $itemData = SaleItem::where('id', $data['item_id'])->first();
         $saleData = Sale::where('id', $itemData->sale_id)->first();
 
-        $medicineInfo = DB::table('inventory_details')->where('medicine_id', $itemData->medicine_id)->where('batch_no', $itemData->batch_no)->first();
-
-        $data['unit_type'] = $data['unit_type'] ?? 'PCS';
-        $medicineCompany = new MedicineCompany();
-        $cartItem = new CartItem();
-        $unitPrice = $cartItem->_getMedicineUnitPrice($medicineInfo, $data['unit_type']);
+        $changeLog = $this->_changeLog($itemData, $data);
+        $medicineInfo = DB::table('products')
+        ->where('medicine_id', $itemData->medicine_id)
+        ->first();
+        $saleItem = new SaleItem();
+        $saleItem->updateInventoryQuantity($itemData->medicine_id, $itemData->quantity - $data['new_quantity'], 'add');
 
         $input = array(
-          'unit_price' => $unitPrice,
           'quantity' => $data['new_quantity'],
-          'unit_type' => $data['unit_type'],
-          'sub_total' => $unitPrice * $data['new_quantity'],
+          'unit_type' => $data['unit_type'] ?? 'PCS',
+          'sub_total' => $itemData->unit_price * $data['new_quantity'],
+          'change_log' => json_encode($changeLog),
+          'updated_at' => $data['updated_at'],
+          'updated_by' => $data['updated_by'],
+          'return_status' => 'CHANGE'
         );
         $saleModel = new Sale();
 
@@ -308,6 +311,20 @@ class SaleController extends Controller
           return response()->json(['success' => true, 'data' => $saleModel->getOrderDetails($itemData->sale_id)]);
         }
         return response()->json(['success' => false, 'data' => $saleModel->getOrderDetails($itemData->sale_id)]);
+    }
+    public function _changeLog($itemData, $data){
+      $changeLog = array();
+      $changeLog = json_decode($itemData->change_log ,true);
+      if(empty($changeLog)) {
+        $changeLog[] = array(
+          'quantity' => $itemData['quantity'],
+          'unit_price' => $itemData['unit_price'],
+          'sub_total' => $itemData['sub_total'],
+          'created_at' => $itemData['created_at']
+        );
+      }
+      $changeLog[] = $data;
+      return $changeLog;
     }
   /*
     public function statusUpdate(Request $request)

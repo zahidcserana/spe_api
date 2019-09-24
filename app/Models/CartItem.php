@@ -19,7 +19,6 @@ class CartItem extends Model
         $medicineInfo = DB::table('products')->where('medicine_id', $data['medicine_id'])->first();
         $data['unit_type'] = $data['unit_type'] ?? 'PCS';
 
-        $unitPrice = $this->_getMedicineUnitPrice($medicineInfo, $data['unit_type']);
         $item = array(
             'medicine_id' => $medicineData->id,
             'company_id' => $medicineData->company_id,
@@ -27,9 +26,9 @@ class CartItem extends Model
             'batch_no' => $medicineInfo->batch_no,
             'exp_date' => $medicineInfo->exp_date,
             'cart_id' => $data['cart_id'],
-            'unit_type' => $data['unit_type'],
-            'unit_price' => $unitPrice,
-            'sub_total' => $unitPrice * $data['quantity'],
+            'unit_type' => $data['unit_type'] ?? 'PCS',
+            'unit_price' => $medicineInfo->mrp,
+            'sub_total' => $medicineInfo->mrp * $data['quantity'],
         );
 
         $cartItem = CartItem::insertGetId($item);
