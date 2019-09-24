@@ -37,7 +37,7 @@ class Order extends Model
         return ['success' => true];
     }
 
-    private function _createOrderInvoice($orderId, $pharmacy_branch_id)
+    public function _createOrderInvoice($orderId, $pharmacy_branch_id)
     {
         $pharmacyBranchModel = new PharmacyBranch();
         $pharmacyBranch = $pharmacyBranchModel->where('id', $pharmacy_branch_id)->first();

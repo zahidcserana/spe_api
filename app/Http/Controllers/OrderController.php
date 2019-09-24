@@ -269,6 +269,67 @@ class OrderController extends Controller
         return response()->json($data);
     }
 
+    public function purchaseSave(Request $request){
+
+        $details = $request->details;
+        $items = $request->items;
+
+        $user = $request->auth;
+
+        $orderAdd = new Order();
+
+        $orderAdd->company_id = $details['company'];
+        $orderAdd->company_invoice = $details['invoice'];
+        $orderAdd->purchase_date = date('Y-m-d');
+        $orderAdd->total_amount = $details['total'];
+        $orderAdd->tax = $details['vat'];
+        $orderAdd->discount = $details['discount'];
+        $orderAdd->sub_total = $details['net_amount'];
+        $orderAdd->total_payble_amount = $details['net_amount'];
+        $orderAdd->total_advance_amount = $details['advance'];
+        $orderAdd->total_due_amount = $details['due'];
+        $orderAdd->status = "ACCEPTED";
+        $orderAdd->created_by = $user->id;
+        $orderAdd->pharmacy_branch_id = $user->pharmacy_branch_id;
+        $orderAdd->save();
+
+        $OrderId = $orderAdd->id;
+
+        $orderAdd->_createOrderInvoice($OrderId, $user->pharmacy_branch_id);
+        
+        foreach($items as $item):
+            
+            $medicine_id = $item['medicine_id'];
+            $medicine = Medicine::where('id', $medicine_id)->get();
+            if(sizeof($medicine)){
+                $company_id = $medicine[0]->company_id;
+            }
+
+            $itemSave = new OrderItem();
+            $itemSave->medicine_id = $item['medicine_id'];
+            $itemSave->company_id = $company_id;
+            $itemSave->quantity = $item['quantity'];
+            $itemSave->order_id = $OrderId;
+            $itemSave->exp_date = $item['exp_date'];
+            $itemSave->batch_no = $item['batch_no'];
+            $itemSave->unit_price = $item['box_mrp']/$item['piece_per_box'];
+            $itemSave->sub_total = $item['amount'];
+            $itemSave->mrp = $item['box_mrp'];
+            $itemSave->trade_price = $item['box_trade_price'];
+            $itemSave->total = $item['amount'];
+            $itemSave->pieces_per_box = $item['piece_per_box'];
+            $itemSave->save();
+
+            
+
+        endforeach;
+
+        return response()->json(array(
+            'data' => "Purchase Successfull!",
+            'details' => $details['due']
+        ));
+    }
+
     public function getOrderList(Request $request)
     {
         $query = $request->query();
