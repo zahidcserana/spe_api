@@ -7,6 +7,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\CartItem;
 use App\Models\Medicine;
+use App\Models\Product;
 use App\Models\Inventory;
 use App\Models\DamageItem;
 use App\Models\ConsumerGood;
@@ -272,25 +273,24 @@ class OrderController extends Controller
     public function purchaseSave(Request $request){
 
         $details = $request->details;
-        $items = $request->items;
-
-        $user = $request->auth;
+        $items   = $request->items;
+        $user    = $request->auth;
 
         $orderAdd = new Order();
 
-        $orderAdd->company_id = $details['company'];
-        $orderAdd->company_invoice = $details['invoice'];
-        $orderAdd->purchase_date = date('Y-m-d');
-        $orderAdd->total_amount = $details['total'];
-        $orderAdd->tax = $details['vat'];
-        $orderAdd->discount = $details['discount'];
-        $orderAdd->sub_total = $details['net_amount'];
-        $orderAdd->total_payble_amount = $details['net_amount'];
+        $orderAdd->company_id           = $details['company'];
+        $orderAdd->company_invoice      = $details['invoice'];
+        $orderAdd->purchase_date        = date('Y-m-d');
+        $orderAdd->total_amount         = $details['total'];
+        $orderAdd->tax                  = $details['vat'];
+        $orderAdd->discount             = $details['discount'];
+        $orderAdd->sub_total            = $details['net_amount'];
+        $orderAdd->total_payble_amount  = $details['net_amount'];
         $orderAdd->total_advance_amount = $details['advance'];
-        $orderAdd->total_due_amount = $details['due'];
-        $orderAdd->status = "ACCEPTED";
-        $orderAdd->created_by = $user->id;
-        $orderAdd->pharmacy_branch_id = $user->pharmacy_branch_id;
+        $orderAdd->total_due_amount     = $details['due'];
+        $orderAdd->status               = "ACCEPTED";
+        $orderAdd->created_by           = $user->id;
+        $orderAdd->pharmacy_branch_id   = $user->pharmacy_branch_id;
         $orderAdd->save();
 
         $OrderId = $orderAdd->id;
@@ -306,27 +306,51 @@ class OrderController extends Controller
             }
 
             $itemSave = new OrderItem();
-            $itemSave->medicine_id = $item['medicine_id'];
-            $itemSave->company_id = $company_id;
-            $itemSave->quantity = $item['quantity'];
-            $itemSave->order_id = $OrderId;
-            $itemSave->exp_date = $item['exp_date'];
-            $itemSave->batch_no = $item['batch_no'];
-            $itemSave->unit_price = $item['box_mrp']/$item['piece_per_box'];
-            $itemSave->sub_total = $item['amount'];
-            $itemSave->mrp = $item['box_mrp'];
-            $itemSave->trade_price = $item['box_trade_price'];
-            $itemSave->total = $item['amount'];
-            $itemSave->pieces_per_box = $item['piece_per_box'];
+            $itemSave->medicine_id      = $item['medicine_id'];
+            $itemSave->company_id       = $company_id;
+            $itemSave->quantity         = $item['quantity'];
+            $itemSave->order_id         = $OrderId;
+            $itemSave->exp_date         = $item['exp_date'];
+            $itemSave->batch_no         = $item['batch_no'];
+            $itemSave->unit_price       = $item['box_mrp']/$item['piece_per_box'];
+            $itemSave->sub_total        = $item['amount'];
+            $itemSave->mrp              = $item['box_mrp'];
+            $itemSave->trade_price      = $item['box_trade_price'];
+            $itemSave->total            = $item['amount'];
+            $itemSave->pieces_per_box   = $item['piece_per_box'];
             $itemSave->save();
 
-            
+            $isProcuctExist = Product::where('medicine_id', $medicine_id)->get();
+            if(sizeof($isProcuctExist))
+            {
+                $procuctId = $isProcuctExist[0]->id;
+
+                $UpdateProduct = Product::find($procuctId);
+                $UpdateProduct->quantity            = $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
+                $UpdateProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
+                $UpdateProduct->batch_no            = $item['batch_no'];
+                $UpdateProduct->exp_date            = $item['exp_date'];
+                $UpdateProduct->company_id          = $company_id ? $company_id : 0;
+                $UpdateProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
+                $UpdateProduct->save();
+            }
+            else
+            {
+                $InsertProduct = new Product();
+                $InsertProduct->medicine_id         = $medicine_id;
+                $InsertProduct->quantity            = $item['quantity'] * $item['piece_per_box'];
+                $InsertProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
+                $InsertProduct->batch_no            = $item['batch_no'];
+                $InsertProduct->exp_date            = $item['exp_date'];
+                $InsertProduct->company_id          = $company_id ? $company_id : 0;
+                $InsertProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
+                $InsertProduct->save();
+            }
 
         endforeach;
 
         return response()->json(array(
-            'data' => "Purchase Successfull!",
-            'details' => $details['due']
+            'data' => "Purchase Successfull!"
         ));
     }
 
