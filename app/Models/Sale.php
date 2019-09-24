@@ -133,7 +133,7 @@ class Sale extends Model
     {
         $order = $this::findOrFail($orderId);
 
-        $orderItems = $order->items()->get();
+        $orderItems = $order->items()->where('return_status', '<>', 'RETURN')->get();
         $data = array();
         $data['order_id'] = $order->id;
         $data['token'] = $order->token;
@@ -296,6 +296,7 @@ class Sale extends Model
             SUM(total_payble_amount) as total_amount
             '))
             ->where('sale_id', $orderId)
+            ->where('return_status', '<>', 'RETURN')
             ->first();
         $order = $this::findOrFail($orderId);
         $data = array(

@@ -281,23 +281,28 @@ class SaleController extends Controller
 
     public function update(Request $request)
     {
+        $user = $request->auth;
         $data = $request->all();
-        // $updateQuery['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_by'] = $user->id;
         $itemData = SaleItem::where('id', $data['item_id'])->first();
         $saleData = Sale::where('id', $itemData->sale_id)->first();
 
-        $medicineInfo = DB::table('products')->where('medicine_id', $itemData->medicine_id)->where('batch_no', $itemData->batch_no)->first();
-
-        $data['unit_type'] = $data['unit_type'] ?? 'PCS';
-        $medicineCompany = new MedicineCompany();
-        $cartItem = new CartItem();
-        $unitPrice = $cartItem->_getMedicineUnitPrice($medicineInfo, $data['unit_type']);
+        $changeLog = $this->_changeLog($itemData, $data);
+        $medicineInfo = DB::table('products')
+        ->where('medicine_id', $itemData->medicine_id)
+        ->first();
+        $saleItem = new SaleItem();
+        $saleItem->updateInventoryQuantity($itemData->medicine_id, $itemData->quantity - $data['new_quantity'], 'add');
 
         $input = array(
-          'unit_price' => $unitPrice,
           'quantity' => $data['new_quantity'],
-          'unit_type' => $data['unit_type'],
-          'sub_total' => $unitPrice * $data['new_quantity'],
+          'unit_type' => $data['unit_type'] ?? 'PCS',
+          'sub_total' => $itemData->unit_price * $data['new_quantity'],
+          'change_log' => json_encode($changeLog),
+          'updated_at' => $data['updated_at'],
+          'updated_by' => $data['updated_by'],
+          'return_status' => 'CHANGE'
         );
         $saleModel = new Sale();
 
@@ -306,6 +311,20 @@ class SaleController extends Controller
           return response()->json(['success' => true, 'data' => $saleModel->getOrderDetails($itemData->sale_id)]);
         }
         return response()->json(['success' => false, 'data' => $saleModel->getOrderDetails($itemData->sale_id)]);
+    }
+    public function _changeLog($itemData, $data){
+      $changeLog = array();
+      $changeLog = json_decode($itemData->change_log ,true);
+      if(empty($changeLog)) {
+        $changeLog[] = array(
+          'quantity' => $itemData['quantity'],
+          'unit_price' => $itemData['unit_price'],
+          'sub_total' => $itemData['sub_total'],
+          'created_at' => $itemData['created_at']
+        );
+      }
+      $changeLog[] = $data;
+      return $changeLog;
     }
   /*
     public function statusUpdate(Request $request)

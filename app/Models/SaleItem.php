@@ -32,12 +32,7 @@ class SaleItem extends Model
                 'discount' => $cartItem->discount,
             );
             $this::create($itemInput);
-            $inventory = DB::table('products')->where('medicine_id', $cartItem->medicine_id)->first();
-            $piece = $this->_getPieces($inventory, $cartItem->unit_type, $cartItem->quantity);
-            $data = array(
-              'quantity' => $inventory->quantity - $piece
-            );
-            $order = DB::table('products')->where('id', $inventory->id)->update($data);
+            $this->updateInventoryQuantity($cartItem->medicine_id, $cartItem->quantity, 'sub');
         }
         return;
     }
@@ -59,9 +54,11 @@ class SaleItem extends Model
     {
         $orderModel = new Sale();
         $item = $this::find($data['item_id']);
+        $item->return_status = 'RETURN';
         $orderId = $item->sale_id;
-        $item->delete();
-        if ($this::where('sale_id', $orderId)->first()) {
+        $item->update();
+        if ($this::where('sale_id', $orderId)->where('return_status', '<>', 'RETURN')->first()) {
+            $this->updateInventoryQuantity($item->medicine_id, $item->quantity);
             $orderModel->updateOrder($orderId);
             $orderDetails = $orderModel->getOrderDetails($orderId);
         } else {
@@ -70,9 +67,14 @@ class SaleItem extends Model
             $order->delete();
             $orderDetails = [];
         }
-
-
         return ['success' => true, 'data' => $orderDetails];
+    }
+    public function updateInventoryQuantity($medicineId, $quantity, $status = 'add') {
+      $inventory = DB::table('products')->where('medicine_id', $medicineId)->first();
+      $data = array(
+        'quantity' => $status == 'add' ? $inventory->quantity + $quantity : $inventory->quantity - $quantity
+      );
+      $order = DB::table('products')->where('id', $inventory->id)->update($data);
     }
 
     public function manualOrderIem($orderId, $data)
