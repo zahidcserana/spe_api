@@ -28,6 +28,94 @@ class SaleController extends Controller
 
         return $pdf->download('order.pdf');
     }
+    public function _dueLog($itemData, $data){
+      $dueLog = array();
+      $dueLog = json_decode($itemData->due_log ,true);
+      if(empty($dueLog)) {
+        $dueLog[] = array(
+          'total_due_amount' => $itemData['total_due_amount'],
+          'total_payble_amount' => $itemData['total_payble_amount'],
+          'created_at' => $itemData['created_at']
+        );
+      }
+      $dueLog[] = $data;
+      return $dueLog;
+    }
+    public function payout(Request $request)
+    {
+        $user = $request->auth;
+        $data = $request->all();
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_by'] = $user->id;
+        $saleData = Sale::where('id', $data['sale_id'])->first();
+
+        $dueLog = $this->_dueLog($saleData, $data);
+
+        $input = array(
+          'total_due_amount' => $saleData->total_due_amount - $data['amount'],
+          'status' => $data['status'],
+          'due_log' => json_encode($dueLog),
+          'updated_at' => $data['updated_at'],
+          'updated_by' => $data['updated_by'],
+        );
+        $saleModel = new Sale();
+        if ($saleData->update($input)) {
+          // $saleModel->updateOrder($saleData->sale_id);
+          return response()->json(['success' => true, 'data' => $saleModel->getOrderDetails($saleData->id)]);
+        }
+        return response()->json(['success' => false, 'data' => $saleModel->getOrderDetails($saleData->id)]);
+    }
+
+    public function saleDueList(Request $request)
+    {
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['sales.status', 'DUE']), $where);
+        $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        if (!empty($data['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
+        }
+        if (!empty($data['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($data['sale_date'])) {
+            $dateRange = explode(',',$data['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '<=', $dateRange[1]]), $where);
+        }
+        $query = Sale::where($where);
+        $total = $query->count();
+        $orders = $query
+            ->orderBy('sales.id', 'desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
+        $orderData = array();
+        foreach ($orders as $order) {
+            $aData = array();
+            $aData['id'] = $order->id;
+            $aData['customer_name'] = $order->customer_name;
+            $aData['customer_mobile'] = $order->customer_mobile;
+            $aData['invoice'] = $order->invoice;
+            $aData['total_payble_amount'] = $order->total_payble_amount;
+            $aData['total_due_amount'] = $order->total_due_amount;
+            $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
+            $aData['image'] = $order->file_name ?? '';
+            $orderData[] = $aData;
+        }
+        $data = array(
+            'total' => $total,
+            'data' => $orderData,
+            'page_no' => $pageNo,
+            'limit' => $limit,
+        );
+        return response()->json($data);
+    }
 
     public function uploadimage(Request $request)
     {
@@ -222,7 +310,7 @@ class SaleController extends Controller
         return response()->json($orderData);
     }
 
-    public function saleReport(Request $request)
+    public function index(Request $request)
     {
         $data = $request->query();
         $pageNo = $request->query('page_no') ?? 1;
@@ -281,9 +369,6 @@ class SaleController extends Controller
         $saleData = Sale::where('id', $itemData->sale_id)->first();
 
         $changeLog = $this->_changeLog($itemData, $data);
-        $medicineInfo = DB::table('products')
-        ->where('medicine_id', $itemData->medicine_id)
-        ->first();
         $saleItem = new SaleItem();
         $saleItem->updateInventoryQuantity($itemData->medicine_id, $itemData->quantity - $data['new_quantity'], 'add');
 
