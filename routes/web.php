@@ -110,11 +110,20 @@ $router->group(['prefix' => 'api'],
                 /** Items  */
                 $router->post('item/receive', ['uses' => 'OrderController@receiveItem']);
 
-                /** Inventory  */
+                /** Inventory   */
+                $router->get('inventory/list', ['uses' => 'OrderController@productList']);
                 $router->get('reports/inventory', ['uses' => 'OrderController@inventoryList']);
                 $router->get('reports/inventoryFilter', ['uses' => 'OrderController@inventoryFilter']);
                 $router->post('inventory/damages', ['uses' => 'OrderController@receiveDamageItem']);
                 $router->get('reports/inventory/damagesList', ['uses' => 'OrderController@damagesList']);
+
+                //Products
+                $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
+                $router->post('product/save', ['uses' => 'OrderController@productSave']);
+                $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
+
+                //inventory/list
+                $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);
 
                 /** Notification List */
                 $router->get('notification/list', ['uses' => 'HomeController@getNotificationList']);
