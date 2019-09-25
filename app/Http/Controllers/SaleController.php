@@ -224,32 +224,26 @@ class SaleController extends Controller
 
     public function saleReport(Request $request)
     {
-        $query = $request->query();
-
+        $data = $request->query();
         $pageNo = $request->query('page_no') ?? 1;
         $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
         $where = array();
         $user = $request->auth;
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-        if (!empty($query['invoice'])) {
-            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
+        if (!empty($data['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
         }
-
-        if (!empty($query['customer_mobile'])) {
-            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
+        if (!empty($data['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
         }
-        if (!empty($query['sale_date'])) {
-            // $date = explode('GMT', $query['sale_date']);
-            // $timestamp = strtotime($date[0]);
-            // $saleDate = date('Y-m-d', $timestamp);
-            $dateRange = explode(',',$query['sale_date']);
-            $query = Sale::where($where)->whereBetween('created_at', $dateRange);
-
-        } else {
-            $query = Sale::where($where);
+        if (!empty($data['sale_date'])) {
+            $dateRange = explode(',',$data['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '<=', $dateRange[1]]), $where);
         }
-
+        $query = Sale::where($where);
         $total = $query->count();
         $orders = $query
             ->orderBy('sales.id', 'desc')
@@ -265,11 +259,9 @@ class SaleController extends Controller
             $aData['invoice'] = $order->invoice;
             $aData['total_payble_amount'] = $order->total_payble_amount;
             $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
-            //$aData['image'] = $order->file_name ? 'http://dgdaapi.local/assets/prescription_image/'. $order->file_name:'';
             $aData['image'] = $order->file_name ?? '';
             $orderData[] = $aData;
         }
-
         $data = array(
             'total' => $total,
             'data' => $orderData,
