@@ -44,7 +44,6 @@ $router->group(['prefix' => 'api'],
                 $router->post('medicines/company', ['uses' => 'MedicineController@searchByCompany']);
                 $router->get('companies', ['uses' => 'CompanyController@index']); // only name of all companies
                 $router->get('companies/inventory', ['uses' => 'CompanyController@getCompaniesByInventory']); // only name of all companies
-                $router->get('company-list', ['uses' => 'CompanyController@companyList']); // only name of all companies
 
                 /** Carts */
                 $router->post('carts/add-to-cart', ['uses' => 'CartController@addToCart']);
@@ -60,7 +59,9 @@ $router->group(['prefix' => 'api'],
                 $router->post('orders/sale/return-item', ['uses' => 'SaleController@update']);
                 $router->post('orders/sale/upload-image', ['uses' => 'SaleController@uploadimage']);
                 $router->get('sale/{saleId}', ['uses' => 'SaleController@view']);
-                $router->get('sales', ['uses' => 'SaleController@saleReport']);
+                $router->get('sales', ['uses' => 'SaleController@index']);
+                $router->get('sales/due', ['uses' => 'SaleController@saleDueList']);
+                $router->post('sales/payout', ['uses' => 'SaleController@payout']);
                 $router->get('reports/sale/latest', ['uses' => 'SaleController@latestSale']);
                 $router->get('medicines/search/sale', ['uses' => 'MedicineController@searchByPharmacy']);
                 $router->post('medicines/batch', ['uses' => 'MedicineController@batchList']);
@@ -83,11 +84,12 @@ $router->group(['prefix' => 'api'],
                 /** Purchase Order list for report */
                 $router->get('purchase-report', ['uses' => 'OrderController@purchaseReport']);
                 $router->get('purchase-report/filter', ['uses' => 'OrderController@purchaseFilter']);
+
                 $router->post('purchase/save', ['uses' => 'OrderController@purchaseSave']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
                 $router->get('purchase/details/{orderId}', ['uses' => 'OrderController@purchaseDetails']);
-                
+
 
                 /** Sales List for report */
                 $router->get('sales-report', ['uses' => 'OrderController@salesReport']);

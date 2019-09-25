@@ -36,6 +36,7 @@ class Sale extends Model
             'total_payble_amount' => $data['sub_total'] - $data['discount'],
             'remarks' => $cartData->remarks,
             'created_at' => date('Y-m-d H:i:s'),
+            'status' => $data['total_due_amount'] > 0 ? 'DUE' : 'COMPLETE'
         );
 
         $orderId = $this::insertGetId($input);
@@ -140,6 +141,7 @@ class Sale extends Model
         $data['pharmacy_branch_id'] = $order->pharmacy_branch_id;
         $data['sub_total'] = $order->sub_total;
         $data['total_payble_amount'] = $order->total_payble_amount;
+        $data['total_due_amount'] = $order->total_due_amount;
         $data['tax'] = $order->tax;
         $data['discount'] = $order->discount;
         $data['invoice'] = $order->invoice;
@@ -147,9 +149,8 @@ class Sale extends Model
         $data['remarks'] = $order->remarks;
         $data['customer_name'] = $order->customer_name;
         $data['customer_mobile'] = $order->customer_mobile;
-
-
-        $data['image'] = $order->file_name ? 'assets/prescription_image'. $order->file_name:'';
+        $data['status'] = $order->status;
+        // $data['image'] = $order->file_name ? 'assets/prescription_image'. $order->file_name:'';
 
         $data['company'] = '';
 
