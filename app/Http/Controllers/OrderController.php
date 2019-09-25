@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Inventory;
 use App\Models\DamageItem;
 use App\Models\ConsumerGood;
+use App\Models\MedicineType;
 use App\Models\MedicineCompany;
 use App\Models\InventoryDetail;
 use App\Models\Order;
@@ -268,6 +269,68 @@ class OrderController extends Controller
         );
 
         return response()->json($data);
+    }
+
+    public function productSave(Request $request)
+    {
+        $companyData = $request->company ? MedicineCompany::where('company_name', 'like', $request->company)->first() : 0;
+        $company_id = $companyData ? $companyData->id : 0;
+        $type_id = $request->type_id ? $request->type_id : 0;
+
+        $user = $request->auth;
+
+        if(!$company_id){
+            $addMedicineCompany = new MedicineCompany();
+            $addMedicineCompany->company_name = $request->company;
+            $addMedicineCompany->save();
+            $company_id =$addMedicineCompany->id;
+        }
+
+        if(!$type_id){
+            $addMedicineType = new MedicineType();
+            $addMedicineType->name = $request->type;
+            $addMedicineType->save();
+            $type_id =$addMedicineType->id;
+        }
+
+        $isExist = Medicine::where('brand_name', 'like', $request->product_name)->get();
+
+        if(sizeof($isExist)){
+            return response()->json(array(
+                'data' => "Product Added unsuccessful!",
+                'status' => false
+            ));
+        }else{
+            $AddMedicine = new Medicine();
+            $AddMedicine->company_id = $company_id;
+            $AddMedicine->brand_name = $request->product_name;
+            $AddMedicine->generic_name = $request->generic;
+            $AddMedicine->strength = $request->power;
+            $AddMedicine->medicine_type_id = $type_id;
+            $AddMedicine->created_by = $user->id;
+            $AddMedicine->product_type = $request->product_type;
+            $AddMedicine->save();
+        }
+        return response()->json(array(
+            'data' => "Product Added Successful!",
+            'status' => true
+        ));
+    }
+
+    public function userAddedProductList(Request $request)
+    {
+        $user = $request->auth;
+        $MedicineList = Medicine::select('medicines.brand_name', 'medicines.generic_name', 'medicines.strength', 'medicines.product_type', 'medicine_types.name as type', 'medicine_companies.company_name')
+        ->orderBy('medicines.brand_name', 'ASC')
+        ->where('created_by', $user->id)
+        ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+        ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
+        ->get();
+
+        return response()->json(array(
+            'data' => $MedicineList,
+            'message' => "Product Listed Successful!",
+        ));
     }
 
     public function purchaseSave(Request $request){
@@ -980,6 +1043,56 @@ class OrderController extends Controller
             'data' => $inventory,
             'status' => 'Successful',
             'message' => 'Inventory List filtered'
+        ));
+    }
+
+    public function typeSearch(Request $request)
+    {
+        $str = $request->input('search');
+
+        $typeList = MedicineType::where('name', 'like', $str . '%')
+            ->inRandomOrder()
+            ->limit(10)
+            ->get();
+        $data = array();
+        foreach ($typeList as $type) {
+            $data[] = ['id' => $type->id, 'name' => $type->name];
+        }
+        return response()->json($data);
+    }
+
+    public function inventoryListFilter(Request $request){
+
+        $user = $request->auth;
+
+        $filter = $request->query('filter');
+        $decode_filter = json_decode($filter, true);
+
+        $company = $decode_filter['company'] ? $decode_filter['company'] : 0;
+        $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
+        $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
+        
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
+            ->orderBy('medicines.brand_name', 'ASC')
+            ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->when($company, function ($query, $company) {
+                return $query->where('products.company_id', $company);
+            })
+            ->when($medicine_id, function ($query, $medicine_id) {
+                return $query->where('products.medicine_id', $medicine_id);
+            })
+            ->when($quantity, function ($query, $quantity) {
+                return $query->where('products.quantity', '<', $quantity);
+            })
+            ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
+            ->get();
+
+        return response()->json(array(
+            'data' => $inventory,
+            'status' => 'Successful',
+            'message' => 'Inventory List'
         ));
     }
 
