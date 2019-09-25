@@ -17,6 +17,7 @@ class CompanyController extends Controller
         }
         return response()->json($data);
     }
+
     public function getCompaniesByInventory(Request $request)
     {
       $user = $request->auth;
@@ -31,5 +32,16 @@ class CompanyController extends Controller
           $data[] = $company->company_name;
       }
       return response()->json($data);
+    }
+
+    public function companyList()
+    {
+        $companies = MedicineCompany::orderBy('company_name', 'asc')->get();
+
+        $data = array();
+        foreach ($companies as $company) {
+            $data[] = array('id' => $company->id, 'name' => $company->company_name, );
+        }
+        return response()->json($data);
     }
 }

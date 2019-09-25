@@ -12,10 +12,15 @@ class MedicineController extends Controller
     public function search(Request $request)
     {
         $str = $request->input('search');
-        $companyData = MedicineCompany::where('company_name', 'like', $request->input('company'))->first();
 
-        $medicines = Medicine::where('brand_name', 'like', '%' . $str . '%')
-            ->where('company_id', $companyData->id)
+        $companyData = $request->input('company') ? MedicineCompany::where('company_name', 'like', $request->input('company'))->first() : 0;
+
+        $company_id =  $companyData ? $companyData->id : 0;
+
+        $medicines = Medicine::where('brand_name', 'like', $str . '%')
+            ->when($company_id, function ($query, $company_id) {
+                return $query->where('company_id', $company_id);
+            })
             ->orWhere('id', $str)
             ->inRandomOrder()
             ->limit(10)
@@ -23,7 +28,7 @@ class MedicineController extends Controller
         $data = array();
         foreach ($medicines as $medicine) {
             $medicineStr = $medicine->brand_name . ' (' . $medicine->strength . ',' . $medicine->medicineType->name . ')';
-            $data[] = $medicineStr;
+            $data[] = ['id' => $medicine->id, 'name' => $medicineStr];
         }
         return response()->json($data);
     }
