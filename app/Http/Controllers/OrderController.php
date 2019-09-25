@@ -938,6 +938,24 @@ class OrderController extends Controller
         ));
     }
 
+    public function productList(Request $request){
+        $user = $request->auth;
+        
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
+            ->orderBy('medicines.brand_name', 'ASC')
+            ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
+            ->get();
+
+        return response()->json(array(
+            'data' => $inventory,
+            'status' => 'Successful',
+            'message' => 'Inventory List'
+        ));
+    }
+
     public function inventoryFilter(Request $request)
     {
 

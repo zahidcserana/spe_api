@@ -108,7 +108,8 @@ $router->group(['prefix' => 'api'],
                 /** Items  */
                 $router->post('item/receive', ['uses' => 'OrderController@receiveItem']);
 
-                /** Inventory  */
+                /** Inventory   */
+                $router->get('inventory/list', ['uses' => 'OrderController@productList']);
                 $router->get('reports/inventory', ['uses' => 'OrderController@inventoryList']);
                 $router->get('reports/inventoryFilter', ['uses' => 'OrderController@inventoryFilter']);
                 $router->post('inventory/damages', ['uses' => 'OrderController@receiveDamageItem']);
