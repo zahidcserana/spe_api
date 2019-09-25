@@ -85,6 +85,12 @@ $router->group(['prefix' => 'api'],
                 $router->get('purchase-report', ['uses' => 'OrderController@purchaseReport']);
                 $router->get('purchase-report/filter', ['uses' => 'OrderController@purchaseFilter']);
 
+                $router->post('purchase/save', ['uses' => 'OrderController@purchaseSave']);
+                //purchase/list
+                $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
+                $router->get('purchase/details/{orderId}', ['uses' => 'OrderController@purchaseDetails']);
+
+
                 /** Sales List for report */
                 $router->get('sales-report', ['uses' => 'OrderController@salesReport']);
                 $router->get('sales-report/filter', ['uses' => 'OrderController@saleFilter']);
