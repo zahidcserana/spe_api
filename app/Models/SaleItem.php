@@ -77,7 +77,8 @@ class SaleItem extends Model
         $data = array(
           'medicine_id' => $item->medicine_id,
           'quantity' => - $quantity,
-          'mrp' => 0.00,
+          'mrp' => $item->unit_price,
+          'company_id' => $item->company_id,
           'pharmacy_branch_id' => $cart->pharmacy_branch_id,
           'pharmacy_id' => $cart->pharmacy_id,
         );
