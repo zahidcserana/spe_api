@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use phpDocumentor\Reflection\Types\This;
 use App\Models\Sale;
+use Auth;
 
 class SaleItem extends Model
 {
@@ -32,7 +33,7 @@ class SaleItem extends Model
                 'discount' => $cartItem->discount,
             );
             $this::create($itemInput);
-            $this->updateInventoryQuantity($cartItem->medicine_id, $cartItem->quantity, 'sub');
+            $this->updateInventoryQuantity($cartItem, $cartItem->quantity, 'sub');
         }
         return;
     }
@@ -58,7 +59,7 @@ class SaleItem extends Model
         $orderId = $item->sale_id;
         $item->update();
         if ($this::where('sale_id', $orderId)->where('return_status', '<>', 'RETURN')->first()) {
-            $this->updateInventoryQuantity($item->medicine_id, $item->quantity);
+            $this->updateInventoryQuantity($item, $item->quantity);
             $orderModel->updateOrder($orderId);
             $orderDetails = $orderModel->getOrderDetails($orderId);
         } else {
@@ -69,12 +70,24 @@ class SaleItem extends Model
         }
         return ['success' => true, 'data' => $orderDetails];
     }
-    public function updateInventoryQuantity($medicineId, $quantity, $status = 'add') {
-      $inventory = DB::table('products')->where('medicine_id', $medicineId)->first();
-      $data = array(
-        'quantity' => $status == 'add' ? $inventory->quantity + $quantity : $inventory->quantity - $quantity
-      );
-      $order = DB::table('products')->where('id', $inventory->id)->update($data);
+    public function updateInventoryQuantity($item, $quantity, $status = 'add') {
+      $inventory = DB::table('products')->where('medicine_id', $item->medicine_id)->first();
+      if(empty($inventory)) {
+        $cart = DB::table('carts')->where('id', $item->cart_id)->first();
+        $data = array(
+          'medicine_id' => $item->medicine_id,
+          'quantity' => - $quantity,
+          'mrp' => 0.00,
+          'pharmacy_branch_id' => $cart->pharmacy_branch_id,
+          'pharmacy_id' => $cart->pharmacy_id,
+        );
+        DB::table('products')->insert($data);
+      }else {
+        $data = array(
+          'quantity' => $status == 'add' ? $inventory->quantity + $quantity : $inventory->quantity - $quantity
+        );
+        DB::table('products')->where('id', $inventory->id)->update($data);
+      }
     }
 
     public function manualOrderIem($orderId, $data)

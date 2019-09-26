@@ -36,11 +36,13 @@ class MedicineController extends Controller
     public function searchByPharmacy(Request $request)
     {
         $str = $request->input('search');
-
-        $pharmacyMedicineIds = DB::table('inventories')->select('medicine_id')->distinct()->pluck('medicine_id');
+        $openSale = true;
+        $pharmacyMedicineIds = $openSale ? false : DB::table('inventories')->select('medicine_id')->distinct()->pluck('medicine_id');
 
         $medicines = Medicine::where('brand_name', 'like', $str . '%')
-            ->whereIn('id', $pharmacyMedicineIds)
+            ->when($pharmacyMedicineIds, function ($query, $pharmacyMedicineIds) {
+                   return $query->whereIn('id', $pharmacyMedicineIds);
+               })
             ->inRandomOrder()
             ->limit(10)
             ->get();

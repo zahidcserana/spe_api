@@ -23,12 +23,12 @@ class CartItem extends Model
             'medicine_id' => $medicineData->id,
             'company_id' => $medicineData->company_id,
             'quantity' => $data['quantity'],
-            'batch_no' => $medicineInfo->batch_no,
-            'exp_date' => $medicineInfo->exp_date,
+            'batch_no' => $medicineInfo ? $medicineInfo->batch_no : null,
+            'exp_date' => $medicineInfo? $medicineInfo->exp_date : null,
             'cart_id' => $data['cart_id'],
             'unit_type' => $data['unit_type'] ?? 'PCS',
-            'unit_price' => $medicineInfo->mrp,
-            'sub_total' => $medicineInfo->mrp * $data['quantity'],
+            'unit_price' => $medicineInfo ? $medicineInfo->mrp : null,
+            'sub_total' => $medicineInfo ? $medicineInfo->mrp * $data['quantity'] : null,
         );
 
         $cartItem = CartItem::insertGetId($item);

@@ -339,13 +339,16 @@ class SaleController extends Controller
             ->limit($limit)
             ->get();
         $orderData = array();
+        $totalSaleAmount = array();
+        $totalDueAmount = array();
         foreach ($orders as $order) {
             $aData = array();
             $aData['id'] = $order->id;
             $aData['customer_name'] = $order->customer_name;
             $aData['customer_mobile'] = $order->customer_mobile;
             $aData['invoice'] = $order->invoice;
-            $aData['total_payble_amount'] = $order->total_payble_amount;
+            $totalSaleAmount[] = $aData['total_payble_amount'] = $order->total_payble_amount;
+            $totalDueAmount[] = $aData['total_due_amount'] = $order->total_due_amount;
             $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
             $aData['image'] = $order->file_name ?? '';
             $orderData[] = $aData;
@@ -355,6 +358,8 @@ class SaleController extends Controller
             'data' => $orderData,
             'page_no' => $pageNo,
             'limit' => $limit,
+            'total_sale_amount' => array_sum($totalSaleAmount),
+            'total_due_amount' => array_sum($totalDueAmount),
         );
         return response()->json($data);
     }
@@ -370,7 +375,7 @@ class SaleController extends Controller
 
         $changeLog = $this->_changeLog($itemData, $data);
         $saleItem = new SaleItem();
-        $saleItem->updateInventoryQuantity($itemData->medicine_id, $itemData->quantity - $data['new_quantity'], 'add');
+        $saleItem->updateInventoryQuantity($itemData, $itemData->quantity - $data['new_quantity'], 'add');
 
         $input = array(
           'quantity' => $data['new_quantity'],
