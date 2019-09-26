@@ -52,7 +52,7 @@ class SaleController extends Controller
         $dueLog = $this->_dueLog($saleData, $data);
 
         $input = array(
-          'total_due_amount' => $saleData->total_due_amount - $data['amount'],
+          'total_due_amount' => $saleData->total_due_amount - ($data['amount'] ?? 0),
           'status' => $data['status'],
           'due_log' => json_encode($dueLog),
           'updated_at' => $data['updated_at'],
@@ -321,6 +321,9 @@ class SaleController extends Controller
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
         if (!empty($data['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
+        }
+        if (empty($data['status'])) {
+            $where = array_merge(array(['sales.status', '<>', 'CANCEL']), $where);
         }
         if (!empty($data['customer_mobile'])) {
             $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
