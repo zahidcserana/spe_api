@@ -293,7 +293,12 @@ class OrderController extends Controller
             $type_id =$addMedicineType->id;
         }
 
-        $isExist = Medicine::where('brand_name', 'like', $request->product_name)->get();
+        $isExist = Medicine::where('brand_name', 'like', $request->product_name)
+        ->where('company_id', $company_id)
+        ->where('generic_name', $request->generic)
+        ->where('strength', $request->power)
+        ->where('medicine_type_id', $type_id)
+        ->get();
 
         if(sizeof($isExist)){
             return response()->json(array(

@@ -44,6 +44,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('medicines/company', ['uses' => 'MedicineController@searchByCompany']);
                 $router->get('companies', ['uses' => 'CompanyController@index']); // only name of all companies
                 $router->get('companies/inventory', ['uses' => 'CompanyController@getCompaniesByInventory']); // only name of all companies
+                $router->get('company-list', ['uses' => 'CompanyController@companyList']);
 
                 /** Carts */
                 $router->post('carts/add-to-cart', ['uses' => 'CartController@addToCart']);
