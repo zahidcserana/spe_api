@@ -365,9 +365,9 @@ class OrderController extends Controller
         $OrderId = $orderAdd->id;
 
         $orderAdd->_createOrderInvoice($OrderId, $user->pharmacy_branch_id);
-        
+
         foreach($items as $item):
-            
+
             $medicine_id = $item['medicine_id'];
             $medicine = Medicine::where('id', $medicine_id)->get();
             if(sizeof($medicine)){
@@ -1008,7 +1008,7 @@ class OrderController extends Controller
 
     public function productList(Request $request){
         $user = $request->auth;
-        
+
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
@@ -1076,7 +1076,7 @@ class OrderController extends Controller
         $company = $decode_filter['company'] ? $decode_filter['company'] : 0;
         $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
         $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
-        
+
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)

@@ -49,7 +49,8 @@ class MedicineController extends Controller
         $data = array();
         foreach ($medicines as $medicine) {
             $company = DB::table('medicine_companies')->where('id', $medicine->company_id)->first();
-            $medicineStr = $medicine->brand_name . ' (' . $medicine->strength . ',' . $medicine->medicineType->name . ')';
+            $medicineType = $medicine->product_type == 1 ? $medicine->medicineType->name : ' CP';
+            $medicineStr = $medicine->brand_name . ' (' . $medicine->strength . ',' . $medicineType . ')';
             $data[] = ['id'=>$medicine->id, 'name' => $medicineStr, 'company' => $company->company_name];
         }
         return response()->json($data);
