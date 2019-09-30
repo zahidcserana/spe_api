@@ -21,6 +21,7 @@ class CartItem extends Model
 
         $item = array(
             'medicine_id' => $medicineData->id,
+            'product_type' => $medicineData->medicine_type_id,
             'company_id' => $medicineData->company_id,
             'quantity' => $data['quantity'],
             'batch_no' => $medicineInfo ? $medicineInfo->batch_no : null,

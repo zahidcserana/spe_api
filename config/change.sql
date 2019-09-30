@@ -4,3 +4,6 @@ ALTER TABLE `sale_items` ADD `updated_by` INT NULL AFTER `change_log`;
 ALTER TABLE `sales` ADD `status` ENUM('PENDING','COMPLETE','DUE','CANCEL') NULL DEFAULT 'COMPLETE' AFTER `server_sale_id`;
 ALTER TABLE `sales` ADD `due_log` TEXT NULL AFTER `status`;
 ALTER TABLE `sales` ADD `updated_by` INT NULL AFTER `created_by`;
+
+ALTER TABLE `sale_items` ADD `product_type` INT NULL AFTER `updated_by`;
+ALTER TABLE `cart_items` ADD `product_type` INT NULL AFTER `updated_at`;

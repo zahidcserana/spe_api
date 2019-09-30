@@ -367,6 +367,77 @@ class SaleController extends Controller
         return response()->json($data);
     }
 
+    public function report(Request $request)
+    {
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        // $where = array_merge(array(['sales.status', '<>', 'CANCEL']), $where);
+
+        if (!empty($data['company_id'])) {
+          $where = array_merge(array(['sale_items.company_id', $data['company_id']]), $where);
+        }
+        if (!empty($data['product_id'])) {
+          $where = array_merge(array(['sale_items.medicine_id', $data['product_id']]), $where);
+        }
+        if (!empty($data['product_type_id'])) {
+          $where = array_merge(array(['sale_items.product_type', $data['product_type_id']]), $where);
+        }
+        if (empty($data['return_status'])) {
+            $where = array_merge(array(['sale_items.return_status', '<>', 'RETURN']), $where);
+        }
+        if (!empty($data['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($data['sale_date'])) {
+            $dateRange = explode(',',$data['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(created_at)'), '<=', $dateRange[1]]), $where);
+        }
+        $query = SaleItem::where($where)->groupBy('medicine_id','product_type')->selectRaw('sum(quantity) as quantity, medicine_id, product_type')
+        ;
+
+        $total = $query->count();
+        $orders = $query
+            ->orderBy('quantity', 'desc')
+            // ->offset($offset)
+            // ->limit($limit)
+            ->get();
+        $orderData = array();
+        $totalSaleAmount = array();
+        $totalDueAmount = array();
+        foreach ($orders as $order) {
+            $aData = array();
+            // $aData['id'] = $order->id;
+            $medicine = DB::table('medicines')->where('id', $order->medicine_id)->first();
+            $aData['medicine'] = ['id' => $medicine->id, 'name' => $medicine->brand_name];
+
+            $company = DB::table('medicine_companies')->where('id', $medicine->company_id)->first();
+
+            $aData['company'] = ['id' => $company->id, 'name' => $company->company_name];
+
+            $medicineTypes = DB::table('medicine_types')->where('id', $medicine->medicine_type_id)->first();
+            $aData['type'] = ['id' => $medicineTypes->id, 'name' => $medicineTypes->name];
+            $aData['quantity'] = $order->quantity;
+
+            $orderData[] = $aData;
+        }
+        // return response()->json($orderData);
+        $data = array(
+            'total' => $total,
+            'data' => $orderData,
+            'page_no' => $pageNo,
+            'limit' => $limit,
+            'total_sale_amount' => array_sum($totalSaleAmount),
+            'total_due_amount' => array_sum($totalDueAmount),
+        );
+        return response()->json($data);
+    }
+
     public function update(Request $request)
     {
         $user = $request->auth;

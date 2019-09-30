@@ -21,7 +21,7 @@ class CompanyController extends Controller
     public function getCompaniesByInventory(Request $request)
     {
       $user = $request->auth;
-      $companyIds = DB::table('inventories')
+      $companyIds = DB::table('products')
                         ->where('pharmacy_branch_id', $user->pharmacy_branch_id)
                         ->select('company_id')->distinct()
                         ->pluck('company_id');
@@ -29,7 +29,7 @@ class CompanyController extends Controller
       $companies = MedicineCompany::whereIn('id', $companyIds)->get();
       $data = array();
       foreach ($companies as $company) {
-          $data[] = $company->company_name;
+          $data[] = ['id'=>$company->id, 'name' => $company->company_name];
       }
       return response()->json($data);
     }

@@ -31,6 +31,7 @@ class SaleItem extends Model
                 'sub_total' => $cartItem->sub_total,
                 'total_payble_amount' => $cartItem->total_payble_amount,
                 'discount' => $cartItem->discount,
+                'product_type' => $cartItem->product_type,
             );
             $this::create($itemInput);
             $this->updateInventoryQuantity($cartItem, $cartItem->quantity, 'sub');

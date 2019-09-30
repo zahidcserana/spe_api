@@ -61,6 +61,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('orders/sale/upload-image', ['uses' => 'SaleController@uploadimage']);
                 $router->get('sale/{saleId}', ['uses' => 'SaleController@view']);
                 $router->get('sales', ['uses' => 'SaleController@index']);
+                $router->get('sales/report', ['uses' => 'SaleController@report']);
                 $router->get('sales/due', ['uses' => 'SaleController@saleDueList']);
                 $router->post('sales/payout', ['uses' => 'SaleController@payout']);
                 $router->get('reports/sale/latest', ['uses' => 'SaleController@latestSale']);
