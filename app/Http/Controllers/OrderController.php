@@ -338,6 +338,17 @@ class OrderController extends Controller
         ));
     }
 
+    public function previousPurchaseDetails(Request $request){
+        //$request
+        if($request->medicine_id){
+            $itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
+        }
+        return response()->json(array(
+            'data' => $itemDetails,
+            'message' => "Product Listed Successful!",
+        ));
+    }
+
     public function purchaseSave(Request $request){
 
         $details = $request->details;
@@ -346,17 +357,17 @@ class OrderController extends Controller
 
         $orderAdd = new Order();
 
-        $orderAdd->company_id           = $details['company'];
-        $orderAdd->company_invoice      = $details['invoice'];
+        $orderAdd->company_id           = $details['company'] ? $details['company'] : 0;
+        $orderAdd->company_invoice      = $details['invoice'] ? $details['invoice'] : 0;
         $orderAdd->purchase_date        = date('Y-m-d');
-        $orderAdd->total_amount         = $details['total'];
-        $orderAdd->tax                  = $details['vat'];
-        $orderAdd->tax_type             = $details['vat_percentage'];
-        $orderAdd->discount             = $details['discount'];
-        $orderAdd->sub_total            = $details['net_amount'];
-        $orderAdd->total_payble_amount  = $details['net_amount'];
-        $orderAdd->total_advance_amount = $details['advance'];
-        $orderAdd->total_due_amount     = $details['due'];
+        $orderAdd->total_amount         = $details['total'] ? $details['total'] : 0;
+        $orderAdd->tax                  = $details['vat'] ? $details['vat'] : 0;
+        $orderAdd->tax_type             = $details['vat_percentage'] ? $details['vat_percentage'] : 0;
+        $orderAdd->discount             = $details['discount'] ? $details['discount'] : 0;
+        $orderAdd->sub_total            = $details['net_amount'] ? $details['net_amount'] : 0;
+        $orderAdd->total_payble_amount  = $details['net_amount'] ? $details['net_amount'] : 0;
+        $orderAdd->total_advance_amount = $details['advance'] ? $details['advance'] : 0;
+        $orderAdd->total_due_amount     = $details['due'] ? $details['due'] : 0;
         $orderAdd->status               = "ACCEPTED";
         $orderAdd->created_by           = $user->id;
         $orderAdd->pharmacy_branch_id   = $user->pharmacy_branch_id;
@@ -436,6 +447,7 @@ class OrderController extends Controller
         $query = Order::select('orders.id as order_id',
             'orders.invoice',
             'orders.company_invoice',
+            'medicine_companies.company_name',
             'orders.purchase_date',
             'orders.quantity',
             'orders.sub_total',
@@ -447,7 +459,8 @@ class OrderController extends Controller
             'orders.total_advance_amount',
             'orders.total_due_amount',
             'orders.status',
-            'orders.created_by')->where($where);
+            'orders.created_by')->where($where)
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
 
         $total = $query->count();
         $orders = $query
@@ -1076,6 +1089,7 @@ class OrderController extends Controller
         $company = $decode_filter['company'] ? $decode_filter['company'] : 0;
         $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
         $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
+        $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
@@ -1088,6 +1102,9 @@ class OrderController extends Controller
             })
             ->when($quantity, function ($query, $quantity) {
                 return $query->where('products.quantity', '<', $quantity);
+            })
+            ->when($medicine_type_id, function ($query, $medicine_type_id) {
+                return $query->where('medicines.medicine_type_id', $medicine_type_id);
             })
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
