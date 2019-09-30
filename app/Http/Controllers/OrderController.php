@@ -338,6 +338,17 @@ class OrderController extends Controller
         ));
     }
 
+    public function previousPurchaseDetails(Request $request){
+        //$request
+        if($request->medicine_id){
+            $itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
+        }
+        return response()->json(array(
+            'data' => $itemDetails,
+            'message' => "Product Listed Successful!",
+        ));
+    }
+
     public function purchaseSave(Request $request){
 
         $details = $request->details;
@@ -436,6 +447,7 @@ class OrderController extends Controller
         $query = Order::select('orders.id as order_id',
             'orders.invoice',
             'orders.company_invoice',
+            'medicine_companies.company_name',
             'orders.purchase_date',
             'orders.quantity',
             'orders.sub_total',
@@ -447,7 +459,8 @@ class OrderController extends Controller
             'orders.total_advance_amount',
             'orders.total_due_amount',
             'orders.status',
-            'orders.created_by')->where($where);
+            'orders.created_by')->where($where)
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
 
         $total = $query->count();
         $orders = $query
