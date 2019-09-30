@@ -346,17 +346,17 @@ class OrderController extends Controller
 
         $orderAdd = new Order();
 
-        $orderAdd->company_id           = $details['company'];
-        $orderAdd->company_invoice      = $details['invoice'];
+        $orderAdd->company_id           = $details['company'] ? $details['company'] : 0;
+        $orderAdd->company_invoice      = $details['invoice'] ? $details['invoice'] : 0;
         $orderAdd->purchase_date        = date('Y-m-d');
-        $orderAdd->total_amount         = $details['total'];
-        $orderAdd->tax                  = $details['vat'];
-        $orderAdd->tax_type             = $details['vat_percentage'];
-        $orderAdd->discount             = $details['discount'];
-        $orderAdd->sub_total            = $details['net_amount'];
-        $orderAdd->total_payble_amount  = $details['net_amount'];
-        $orderAdd->total_advance_amount = $details['advance'];
-        $orderAdd->total_due_amount     = $details['due'];
+        $orderAdd->total_amount         = $details['total'] ? $details['total'] : 0;
+        $orderAdd->tax                  = $details['vat'] ? $details['vat'] : 0;
+        $orderAdd->tax_type             = $details['vat_percentage'] ? $details['vat_percentage'] : 0;
+        $orderAdd->discount             = $details['discount'] ? $details['discount'] : 0;
+        $orderAdd->sub_total            = $details['net_amount'] ? $details['net_amount'] : 0;
+        $orderAdd->total_payble_amount  = $details['net_amount'] ? $details['net_amount'] : 0;
+        $orderAdd->total_advance_amount = $details['advance'] ? $details['advance'] : 0;
+        $orderAdd->total_due_amount     = $details['due'] ? $details['due'] : 0;
         $orderAdd->status               = "ACCEPTED";
         $orderAdd->created_by           = $user->id;
         $orderAdd->pharmacy_branch_id   = $user->pharmacy_branch_id;
