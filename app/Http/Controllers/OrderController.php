@@ -1089,6 +1089,7 @@ class OrderController extends Controller
         $company = $decode_filter['company'] ? $decode_filter['company'] : 0;
         $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
         $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
+        $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
@@ -1101,6 +1102,9 @@ class OrderController extends Controller
             })
             ->when($quantity, function ($query, $quantity) {
                 return $query->where('products.quantity', '<', $quantity);
+            })
+            ->when($medicine_type_id, function ($query, $medicine_type_id) {
+                return $query->where('medicines.medicine_type_id', $medicine_type_id);
             })
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
