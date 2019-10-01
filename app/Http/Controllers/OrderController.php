@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cart;
 use App\Models\Sale;
+use App\Models\OrderDue;
 use App\Models\SaleItem;
 use App\Models\CartItem;
 use App\Models\Medicine;
@@ -347,6 +348,43 @@ class OrderController extends Controller
             'data' => $itemDetails,
             'message' => "Product Listed Successful!",
         ));
+    }
+
+    public function purchaseDueSave(Request $request)
+    {
+        $details = $request->details;
+        $user    = $request->auth;
+        $orderId = $details['order_id'];
+        $payble_due = $details['payble_due'] ? $details['payble_due'] : 0;
+        $payble_discount = $details['payble_discount'] ? $details['payble_discount'] : 0;
+
+        if($orderId && $payble_due){
+            $UpdateOrder = Order::find($orderId);
+            if($UpdateOrder->total_due_amount >= $payble_due){
+                $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
+            }else
+            {
+                $due_calculate = 0;
+            }
+            $UpdateOrder->total_due_amount = $due_calculate;
+            $discount_calculate = $UpdateOrder->discount + $payble_discount;
+            $UpdateOrder->discount = $discount_calculate;
+            $UpdateOrder->save();
+
+            $insertOrderDue = new OrderDue();
+            $insertOrderDue->order_id = $orderId;
+            $insertOrderDue->pay_amount = $payble_due;
+            $insertOrderDue->save();
+
+            return response()->json(array(
+                'data' => "Purchase Due submited Successfull!"
+            ));
+        }
+
+        return response()->json(array(
+            'data' => "Pleade Check the details!"
+        ));
+
     }
 
     public function purchaseSave(Request $request){
