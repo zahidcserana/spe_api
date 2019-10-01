@@ -91,6 +91,8 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
+                $router->get('purchase/due/list', ['uses' => 'OrderController@purchaseDueList']);
+                
                 $router->get('purchase/details/{orderId}', ['uses' => 'OrderController@purchaseDetails']);
 
 
