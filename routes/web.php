@@ -88,6 +88,8 @@ $router->group(['prefix' => 'api'],
                 $router->get('purchase-report/filter', ['uses' => 'OrderController@purchaseFilter']);
 
                 $router->post('purchase/save', ['uses' => 'OrderController@purchaseSave']);
+                $router->post('purchase/due/save', ['uses' => 'OrderController@purchaseDueSave']);
+                
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
