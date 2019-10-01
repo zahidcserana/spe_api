@@ -477,10 +477,69 @@ class OrderController extends Controller
         ));
     }
 
+    public function purchaseDueList(Request $request){
+        $query = $request->query();
+
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 100;
+        $offset = (($pageNo - 1) * $limit);
+
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+
+        $query = Order::select('orders.id as order_id',
+            'orders.invoice',
+            'orders.company_invoice',
+            'medicine_companies.company_name',
+            'orders.purchase_date',
+            'orders.quantity',
+            'orders.sub_total',
+            'orders.tax as vat',
+            'orders.tax_type as vat_type',
+            'orders.discount',
+            'orders.total_amount',
+            'orders.total_payble_amount',
+            'orders.total_advance_amount',
+            'orders.total_due_amount',
+            'orders.status',
+            'orders.created_by')->where($where)
+            ->where('orders.total_due_amount', '>', 0)
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
+
+        $total = $query->count();
+        $orders = $query
+            ->orderBy('orders.id', 'desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
+
+        return response()->json(array(
+            'total' => $total,
+            'page_no' => $pageNo,
+            'limit' => $limit,
+            'data' => $orders,
+        ));
+    }
+
     public function purchaseDetails($order_id)
     {
         if ($order_id) {
-            $orderDetails = Order::select('invoice', 'purchase_date')->where('id', $order_id)->get();
+            $orderDetails = Order::select('id as order_id',
+            'invoice', 
+            'purchase_date', 
+            'purchase_date', 
+            'quantity', 
+            'sub_total',
+            'tax as vat',
+            'tax_type as vat_type',
+            'discount',
+            'total_amount',
+            'total_payble_amount',
+            'total_advance_amount',
+            'total_due_amount',
+            'status'
+            )->where('id', $order_id)->get();
 
             $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
                 'order_items.exp_date', 'order_items.batch_no', 'order_items.unit_price', 'order_items.total', 'order_items.pieces_per_box', 'order_items.mrp', 'order_items.trade_price')
