@@ -362,11 +362,14 @@ class OrderController extends Controller
             $UpdateOrder = Order::find($orderId);
             if($UpdateOrder->total_due_amount >= $payble_due){
                 $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
+                $total_advance_amount = $UpdateOrder->total_advance_amount + $payble_due;
             }else
             {
                 $due_calculate = 0;
+                $total_advance_amount = $UpdateOrder->total_advance_amount;
             }
             $UpdateOrder->total_due_amount = $due_calculate;
+            $UpdateOrder->total_advance_amount = $total_advance_amount;
             $discount_calculate = $UpdateOrder->discount + $payble_discount;
             $UpdateOrder->discount = $discount_calculate;
             $UpdateOrder->save();
