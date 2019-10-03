@@ -54,10 +54,18 @@ class HomeController extends Controller
             $details_data[] = array('order_details' => $order, 'order_items' => $items);
         endforeach;
 
+        $saleData = [];
+        $orders = DB::table('products')->where('is_sync', 0)->where('status', '<>', 'CANCEL')->get();
+
+        foreach ($orders as $order) :
+            $items = $order->items()->get();
+            $details_data[] = array('order_details' => $order, 'order_items' => $items);
+        endforeach;
+
         /** status sync start */
-        $statusData = OrderItem::where(['is_status_updated' => 1, 'is_status_sync' => 0])
-            ->whereNotNull('server_item_id')
-            ->get();
+        // $statusData = OrderItem::where(['is_status_updated' => 1, 'is_status_sync' => 0])
+        //     ->whereNotNull('server_item_id')
+        //     ->get();
 
         $itemIds = array();
         foreach ($statusData as $item) {
@@ -67,7 +75,7 @@ class HomeController extends Controller
 
         $data = array(
             'details_data' => $details_data,
-            'status_data' => $statusData,
+            'status_data' => [],
         );
 
         // Make Post Fields Array

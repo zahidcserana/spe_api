@@ -30,7 +30,8 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         $lastInsertId = $this::orderBy('id', 'desc')->first();
         $userData = array(
             'name' => $data['name'],
-            // 'email' => $data['email'],
+            'pharmacy_branch_id' => $data['pharmacy_branch_id'] ?? '',
+            'user_type' => $data['user_type'] ?? '',
             'user_mobile' => $data['user_mobile'],
             'password' => Hash::make('dgda@' . $data['user_mobile']),
             'userid' => $lastInsertId->id + 1 . Carbon::now()->timestamp,

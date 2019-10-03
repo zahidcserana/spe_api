@@ -8,7 +8,6 @@ $router->group(['prefix' => 'api'],
     function () use ($router) {
 
         $router->post('auth/login', ['uses' => 'Auth\AuthController@userAuthenticate']);
-        $router->post('users', ['uses' => 'UserController@create']);
         $router->post('users/verify', ['uses' => 'UserController@verifyUser']);
         $router->post('users/verification-code', ['uses' => 'UserController@getVerificationCode']);
         $router->post('cities', ['uses' => 'HomeController@districtList']);
@@ -20,6 +19,7 @@ $router->group(['prefix' => 'api'],
         $router->group(['middleware' => 'jwt.auth'],
             function () use ($router) {
                 $router->get('users', ['uses' => 'UserController@showAllUsers']);
+                $router->post('users', ['uses' => 'UserController@create']);
 
                 /** Users */
                 $router->post('users/{id}', ['uses' => 'UserController@update']);
@@ -89,12 +89,12 @@ $router->group(['prefix' => 'api'],
 
                 $router->post('purchase/save', ['uses' => 'OrderController@purchaseSave']);
                 $router->post('purchase/due/save', ['uses' => 'OrderController@purchaseDueSave']);
-                
+
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
                 $router->get('purchase/due/list', ['uses' => 'OrderController@purchaseDueList']);
-                
+
                 $router->get('purchase/details/{orderId}', ['uses' => 'OrderController@purchaseDetails']);
 
 
