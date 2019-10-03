@@ -10,24 +10,29 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-    public function showAllUsers()
+    public function showAllUsers(Request $request)
     {
-        return response()->json(User::all());
+      $user = $request->auth;
+      $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+      return response()->json($users);
     }
 
     public function create(Request $request)
     {
+      $user = $request->auth;
+
         $this->validate($request, [
             'name' => 'required',
-            //'email' => 'required|email|unique:users',
             'user_mobile' => 'required',
-            //'password' => 'required|confirmed|min:6',
         ]);
         $data = $request->all();
+        $data['pharmacy_branch_id'] = $user->pharmacy_branch_id;
+        $data['pharmacy_id'] = $user->pharmacy_id;
         $userModel = new User();
         $user = $userModel->create($data);
 
-        return response()->json($user);
+        $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+        return response()->json(['success' => true, 'data' => $users]);
     }
 
     public function sendPushNotification($title, $messageBody, $message, $imageUrl, $urlNeedsToOpen, $sendType)
@@ -159,7 +164,10 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->update($request->all());
 
-        return response()->json(['success' => true, 'data' => $user]);
+        $user = $request->auth;
+        $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+
+        return response()->json(['success' => true, 'data' => $users]);
     }
 
     public function mrConnection(Request $request)
