@@ -23,7 +23,7 @@ class UserController extends Controller
 
         $this->validate($request, [
             'name' => 'required',
-            'user_mobile' => 'required',
+            'email' => 'required',
         ]);
         $data = $request->all();
         $data['pharmacy_branch_id'] = $user->pharmacy_branch_id;
