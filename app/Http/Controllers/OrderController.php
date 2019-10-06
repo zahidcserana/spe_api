@@ -356,27 +356,40 @@ class OrderController extends Controller
         $user    = $request->auth;
         $orderId = $details['order_id'];
         $payble_due = $details['payble_due'] ? $details['payble_due'] : 0;
+        $new_pay_amount = $details['pay_amount'] ? $details['pay_amount'] : 0;
         $payble_discount = $details['payble_discount'] ? $details['payble_discount'] : 0;
 
-        if($orderId && $payble_due){
+        if($orderId && $new_pay_amount){
             $UpdateOrder = Order::find($orderId);
-            if($UpdateOrder->total_due_amount >= $payble_due){
-                $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
-                $total_advance_amount = $UpdateOrder->total_advance_amount + $payble_due;
-            }else
-            {
-                $due_calculate = 0;
-                $total_advance_amount = $UpdateOrder->total_advance_amount;
-            }
-            $UpdateOrder->total_due_amount = $due_calculate;
-            $UpdateOrder->total_advance_amount = $total_advance_amount;
+
+            $UpdateOrder->total_due_amount = $UpdateOrder->total_due_amount - $new_pay_amount;
+
+            // return response()->json(array(
+            //     'data' => $new_pay_amount,
+            //     'message' => "Purchase Due submited Successfull!"
+            // ));
+
+            // //Recalculate korte Hobe
+            // if($UpdateOrder->total_due_amount >= $payble_due){
+            //     $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
+            //     $total_advance_amount = $UpdateOrder->total_advance_amount + $payble_due;
+            // }else
+            // {
+            //     $due_calculate = 0;
+            //     $total_advance_amount = $UpdateOrder->total_advance_amount;
+            // }
+            // //$UpdateOrder->total_due_amount = $due_calculate;
+            // // $UpdateOrder->total_advance_amount = $total_advance_amount;
+
+            $UpdateOrder->total_advance_amount = $UpdateOrder->total_advance_amount + $new_pay_amount;
+
             $discount_calculate = $UpdateOrder->discount + $payble_discount;
             $UpdateOrder->discount = $discount_calculate;
             $UpdateOrder->save();
 
             $insertOrderDue = new OrderDue();
             $insertOrderDue->order_id = $orderId;
-            $insertOrderDue->pay_amount = $payble_due;
+            $insertOrderDue->pay_amount = $new_pay_amount;
             $insertOrderDue->save();
 
             return response()->json(array(
