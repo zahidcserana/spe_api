@@ -356,27 +356,40 @@ class OrderController extends Controller
         $user    = $request->auth;
         $orderId = $details['order_id'];
         $payble_due = $details['payble_due'] ? $details['payble_due'] : 0;
+        $new_pay_amount = $details['pay_amount'] ? $details['pay_amount'] : 0;
         $payble_discount = $details['payble_discount'] ? $details['payble_discount'] : 0;
 
-        if($orderId && $payble_due){
+        if($orderId && $new_pay_amount){
             $UpdateOrder = Order::find($orderId);
-            if($UpdateOrder->total_due_amount >= $payble_due){
-                $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
-                $total_advance_amount = $UpdateOrder->total_advance_amount + $payble_due;
-            }else
-            {
-                $due_calculate = 0;
-                $total_advance_amount = $UpdateOrder->total_advance_amount;
-            }
-            $UpdateOrder->total_due_amount = $due_calculate;
-            $UpdateOrder->total_advance_amount = $total_advance_amount;
+
+            $UpdateOrder->total_due_amount = $UpdateOrder->total_due_amount - $new_pay_amount;
+
+            // return response()->json(array(
+            //     'data' => $new_pay_amount,
+            //     'message' => "Purchase Due submited Successfull!"
+            // ));
+
+            // //Recalculate korte Hobe
+            // if($UpdateOrder->total_due_amount >= $payble_due){
+            //     $due_calculate = $UpdateOrder->total_due_amount - $payble_due;
+            //     $total_advance_amount = $UpdateOrder->total_advance_amount + $payble_due;
+            // }else
+            // {
+            //     $due_calculate = 0;
+            //     $total_advance_amount = $UpdateOrder->total_advance_amount;
+            // }
+            // //$UpdateOrder->total_due_amount = $due_calculate;
+            // // $UpdateOrder->total_advance_amount = $total_advance_amount;
+
+            $UpdateOrder->total_advance_amount = $UpdateOrder->total_advance_amount + $new_pay_amount;
+
             $discount_calculate = $UpdateOrder->discount + $payble_discount;
             $UpdateOrder->discount = $discount_calculate;
             $UpdateOrder->save();
 
             $insertOrderDue = new OrderDue();
             $insertOrderDue->order_id = $orderId;
-            $insertOrderDue->pay_amount = $payble_due;
+            $insertOrderDue->pay_amount = $new_pay_amount;
             $insertOrderDue->save();
 
             return response()->json(array(
@@ -387,7 +400,199 @@ class OrderController extends Controller
         return response()->json(array(
             'data' => "Pleade Check the details!"
         ));
+    }
 
+    public function purchaseItemDetailsUpdate(Request $request)
+    {
+        $details = $request->details;
+        $user    = $request->auth;
+        
+        $orderId = $details['order_id'];
+        $update_item_id = $details['item_id'];
+        $update_new_qty = $details['new_quantity'];
+        $previous_quantity = $details['previous_quantity'];
+
+        $UpdateItemInfo = OrderItem::find($update_item_id);
+        $piece_per_box = $UpdateItemInfo->pieces_per_box;
+        $trade_price = $UpdateItemInfo->trade_price;
+        $update_medicine_id = $UpdateItemInfo->medicine_id;
+
+        $previous_total_qty = $piece_per_box * $previous_quantity;
+        $new_total_qty = $piece_per_box * $update_new_qty;
+
+        if($previous_total_qty > $new_total_qty)
+        {
+            $updated_product_quantity = $previous_total_qty - $new_total_qty;
+            
+            $total_price = $trade_price * $update_new_qty;
+            $grandTotalPrice = $total_price;
+
+            $UpdateItemInfo->is_modified = 1;
+            $UpdateItemInfo->quantity = $update_new_qty;
+            $UpdateItemInfo->modified_qty = $previous_quantity - $update_new_qty;
+            $UpdateItemInfo->sub_total = $total_price;
+            $UpdateItemInfo->total = $total_price;
+            $UpdateItemInfo->status = "RETURNED";
+            $UpdateItemInfo->save();
+
+            $existing_items = OrderItem::where('order_id', $orderId)->where('id', '!=', $update_item_id)->get();
+
+            if(sizeof($existing_items)){
+                foreach($existing_items as $item):
+                    $grandTotalPrice = $grandTotalPrice + $item->total;
+                endforeach;
+            }
+
+            $UpdateOrderInfo = Order::find($orderId);
+            $tax_type = $UpdateOrderInfo->tax_type;
+            $tax = $UpdateOrderInfo->tax;
+            $discount = $UpdateOrderInfo->discount;
+
+            if($tax_type == "percentage"){
+                $total_vat = ($grandTotalPrice * $tax) / 100;
+                $sub_total = $grandTotalPrice + $total_vat + $discount;
+            }else{
+                $sub_total = $grandTotalPrice + $tax + $discount;
+            }
+
+            $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
+            
+            $due = $sub_total - $total_advance_amount;
+
+            $UpdateOrderInfo->total_due_amount = $due;
+            $UpdateOrderInfo->sub_total = $sub_total;
+            $UpdateOrderInfo->total_amount = $grandTotalPrice;
+            $UpdateOrderInfo->total_payble_amount = $sub_total;
+            $UpdateOrderInfo->save();
+
+            $UpdateProduct = Product::where('medicine_id', $update_medicine_id)->get();
+            if(sizeof($UpdateProduct)){
+                $productId = $UpdateProduct[0]->id;
+                $UpdateProductInfo = Product::find($productId);
+                $UpdateProductInfo->quantity = $UpdateProductInfo->quantity - $updated_product_quantity;
+                $UpdateProductInfo->save();
+            }
+
+        }else{
+
+            $updated_product_quantity = $new_total_qty - $previous_total_qty;
+
+            $total_price = $trade_price * $update_new_qty;
+            $grandTotalPrice = $total_price;
+
+            $UpdateItemInfo->is_modified = 1;
+            $UpdateItemInfo->quantity = $update_new_qty;
+            $UpdateItemInfo->modified_qty = $update_new_qty - $previous_quantity;
+            $UpdateItemInfo->sub_total = $total_price;
+            $UpdateItemInfo->total = $total_price;
+            $UpdateItemInfo->status = "RETURNED";
+            $UpdateItemInfo->save();
+
+            $existing_items = OrderItem::where('order_id', $orderId)->where('id', '!=', $update_item_id)->get();
+
+            if(sizeof($existing_items)){
+                foreach($existing_items as $item):
+                    $grandTotalPrice = $grandTotalPrice + $item->total;
+                endforeach;
+            }
+
+            $UpdateOrderInfo = Order::find($orderId);
+            $tax_type = $UpdateOrderInfo->tax_type;
+            $tax = $UpdateOrderInfo->tax;
+            $discount = $UpdateOrderInfo->discount;
+            if($tax_type == "percentage"){
+                $total_vat = ($grandTotalPrice * $tax) / 100;
+                $sub_total = $grandTotalPrice + $total_vat + $discount;
+            }else{
+                $sub_total = $grandTotalPrice + $tax + $discount;
+            }
+            $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
+            
+            $due = $sub_total - $total_advance_amount;
+
+            $UpdateOrderInfo->total_due_amount = $due;
+
+            $UpdateOrderInfo->sub_total = $sub_total;
+            $UpdateOrderInfo->total_amount = $grandTotalPrice;
+            $UpdateOrderInfo->total_payble_amount = $sub_total;
+            $UpdateOrderInfo->save();
+
+            $UpdateProduct = Product::where('medicine_id', $update_medicine_id)->get();
+            if(sizeof($UpdateProduct)){
+                $productId = $UpdateProduct[0]->id;
+                $UpdateProductInfo = Product::find($productId);
+                $UpdateProductInfo->quantity = $UpdateProductInfo->quantity + $updated_product_quantity;
+                $UpdateProductInfo->save();
+            }
+        }
+
+        return response()->json(array(
+            'message' => "Purchase item updated Successfull!",
+        ));
+    }
+
+    public function purchaseItemDetailsDelete(Request $request)
+    {
+
+        $item_id = $request->item_id;
+        $orderId = $request->order_id;
+        $user    = $request->auth;
+
+        $UpdateItemInfo = OrderItem::find($item_id);
+        $piece_per_box = $UpdateItemInfo->pieces_per_box;
+        $trade_price = $UpdateItemInfo->trade_price;
+        $quantity = $UpdateItemInfo->quantity;
+
+        $update_medicine_id = $UpdateItemInfo->medicine_id;
+
+        $new_total_qty = $piece_per_box * $quantity;
+
+        $UpdateProduct = Product::where('medicine_id', $update_medicine_id)->get();
+        if(sizeof($UpdateProduct)){
+            $productId = $UpdateProduct[0]->id;
+            $UpdateProductInfo = Product::find($productId);
+            $UpdateProductInfo->quantity = $UpdateProductInfo->quantity - $new_total_qty;
+            $UpdateProductInfo->save();
+        }
+
+        $existing_items = OrderItem::where('order_id', $orderId)->where('id', '!=', $item_id)->get();
+
+        $grandTotalPrice = 0;
+        if(sizeof($existing_items)){
+            foreach($existing_items as $item):
+                $grandTotalPrice = $grandTotalPrice + $item->total;
+            endforeach;
+        }
+
+        $UpdateOrderInfo = Order::find($orderId);
+
+        $tax_type = $UpdateOrderInfo->tax_type;
+        $tax = $UpdateOrderInfo->tax;
+        $discount = $UpdateOrderInfo->discount;
+
+        if($tax_type == "percentage"){
+            $total_vat = ($grandTotalPrice * $tax) / 100;
+            $sub_total = $grandTotalPrice + $total_vat + $discount;
+        }else{
+            $sub_total = $grandTotalPrice + $tax + $discount;
+        }
+        $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
+
+        $due = $sub_total - $total_advance_amount;
+
+        $UpdateOrderInfo->total_due_amount = $due;
+
+        $UpdateOrderInfo->sub_total = $sub_total;
+        $UpdateOrderInfo->total_amount = $grandTotalPrice;
+        $UpdateOrderInfo->total_payble_amount = $sub_total;
+        $UpdateOrderInfo->save();
+
+        $UpdateItemInfo = OrderItem::find($item_id);
+        $UpdateItemInfo->delete();
+        
+        return response()->json(array(
+            'message' => "Purchase item deleted Successfull!",
+        ));
     }
 
     public function purchaseSave(Request $request){
@@ -545,7 +750,7 @@ class OrderController extends Controller
             'orders.total_due_amount',
             'orders.status',
             'orders.created_by')->where($where)
-            ->where('orders.total_due_amount', '>', 0)
+            ->where('orders.total_due_amount', '!=', 0)
             ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
 
         $total = $query->count();
@@ -582,7 +787,7 @@ class OrderController extends Controller
             'status'
             )->where('id', $order_id)->get();
 
-            $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
+            $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'order_items.order_id as item_order_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
                 'order_items.exp_date', 'order_items.batch_no', 'order_items.unit_price', 'order_items.total', 'order_items.pieces_per_box', 'order_items.mrp', 'order_items.trade_price')
                 ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
                 ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
