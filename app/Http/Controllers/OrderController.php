@@ -642,9 +642,12 @@ class OrderController extends Controller
             $itemSave->sub_total        = $item['amount'];
             $itemSave->mrp              = $item['box_mrp'];
             $itemSave->trade_price      = $item['box_trade_price'];
+            $itemSave->box_vat          = $item['box_vat'];
             $itemSave->total            = $item['amount'];
             $itemSave->pieces_per_box   = $item['piece_per_box'];
             $itemSave->save();
+
+            $per_item_vat = ($item['box_trade_price'] + $item['box_vat'])/$item['piece_per_box'];
 
             $isProcuctExist = Product::where('medicine_id', $medicine_id)->get();
             if(sizeof($isProcuctExist))
@@ -654,6 +657,7 @@ class OrderController extends Controller
                 $UpdateProduct = Product::find($procuctId);
                 $UpdateProduct->quantity            = $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
                 $UpdateProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
+                $UpdateProduct->tp                  = $per_item_vat ? $per_item_vat : 0.00;
                 $UpdateProduct->batch_no            = $item['batch_no'];
                 $UpdateProduct->company_id          = $company_id ? $company_id : 0;
                 $UpdateProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
@@ -665,6 +669,7 @@ class OrderController extends Controller
                 $InsertProduct->medicine_id         = $medicine_id;
                 $InsertProduct->quantity            = $item['quantity'] * $item['piece_per_box'];
                 $InsertProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
+                $InsertProduct->tp                  = $per_item_vat ? $per_item_vat : 0.00;
                 $InsertProduct->batch_no            = $item['batch_no'];
                 $InsertProduct->company_id          = $company_id ? $company_id : 0;
                 $InsertProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
@@ -788,7 +793,7 @@ class OrderController extends Controller
             )->where('id', $order_id)->get();
 
             $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'order_items.order_id as item_order_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
-                'order_items.exp_date', 'order_items.batch_no', 'order_items.unit_price', 'order_items.total', 'order_items.pieces_per_box', 'order_items.mrp', 'order_items.trade_price')
+                'order_items.exp_date', 'order_items.batch_no', 'order_items.unit_price', 'order_items.total', 'order_items.pieces_per_box', 'order_items.mrp', 'order_items.trade_price', 'order_items.box_vat')
                 ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
                 ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
                 ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
