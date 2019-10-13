@@ -111,6 +111,7 @@ class Cart extends Model
             $aData['batch_no'] = $cartItem->batch_no;
             $aData['dar_no'] = $cartItem->dar_no;
             $aData['unit_price'] = $cartItem->unit_price;
+            $aData['tp'] = DB::table('products')->where('medicine_id', $cartItem->medicine_id)->tp ?? 0;
             $aData['sub_total'] = $cartItem->sub_total;
             $aData['discount'] = $cartItem->discount;
             $aData['exp_date'] = date("M, Y", strtotime($cartItem->exp_date));

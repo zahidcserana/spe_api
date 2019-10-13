@@ -9,3 +9,5 @@ ALTER TABLE `sale_items` ADD `product_type` INT NULL AFTER `updated_by`;
 ALTER TABLE `cart_items` ADD `product_type` INT NULL AFTER `updated_at`;
 
 ALTER TABLE `products` ADD `is_sync` BOOLEAN NULL DEFAULT FALSE AFTER `pharmacy_id`;
+
+ALTER TABLE `products` ADD `sale_quantity` INT NULL DEFAULT '0' AFTER `quantity`;
