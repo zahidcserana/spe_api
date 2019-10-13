@@ -77,7 +77,7 @@ class SaleItem extends Model
         $cart = DB::table('carts')->where('id', $item->cart_id)->first();
         $data = array(
           'medicine_id' => $item->medicine_id,
-          'quantity' => - $quantity,
+          'sale_quantity' => $quantity,
           'mrp' => $item->unit_price,
           'company_id' => $item->company_id,
           'pharmacy_branch_id' => $cart->pharmacy_branch_id,
@@ -86,7 +86,7 @@ class SaleItem extends Model
         DB::table('products')->insert($data);
       }else {
         $data = array(
-          'quantity' => $status == 'add' ? $inventory->quantity + $quantity : $inventory->quantity - $quantity
+          'sale_quantity' => $status == 'add' ? $inventory->sale_quantity + $quantity : $inventory->sale_quantity - $quantity
         );
         DB::table('products')->where('id', $inventory->id)->update($data);
       }
