@@ -64,6 +64,7 @@ class SaleItem extends Model
             $orderModel->updateOrder($orderId);
             $orderDetails = $orderModel->getOrderDetails($orderId);
         } else {
+            $this->updateInventoryQuantity($item, $item->quantity);
             $order = new Sale();
             $order = $order::find($orderId);
             $order->delete();
@@ -73,23 +74,25 @@ class SaleItem extends Model
     }
     public function updateInventoryQuantity($item, $quantity, $status = 'add') {
       $inventory = DB::table('products')->where('medicine_id', $item->medicine_id)->first();
-      if(empty($inventory)) {
-        $cart = DB::table('carts')->where('id', $item->cart_id)->first();
+      if($inventory) {
+        $aQty = $status == 'add' ? $inventory->sale_quantity + $quantity : $inventory->sale_quantity - $quantity;
         $data = array(
-          'medicine_id' => $item->medicine_id,
-          'sale_quantity' => $quantity,
-          'mrp' => $item->unit_price,
-          'company_id' => $item->company_id,
-          'pharmacy_branch_id' => $cart->pharmacy_branch_id,
-          'pharmacy_id' => $cart->pharmacy_id,
-        );
-        DB::table('products')->insert($data);
-      }else {
-        $data = array(
-          'sale_quantity' => $status == 'add' ? $inventory->sale_quantity + $quantity : $inventory->sale_quantity - $quantity
+          'sale_quantity' => $aQty < 0 ? 0 : $aQty
         );
         DB::table('products')->where('id', $inventory->id)->update($data);
       }
+      // else {
+      //   $cart = DB::table('carts')->where('id', $item->cart_id)->first();
+      //   $data = array(
+      //     'medicine_id' => $item->medicine_id,
+      //     'sale_quantity' => $quantity,
+      //     'mrp' => $item->unit_price,
+      //     'company_id' => $item->company_id,
+      //     'pharmacy_branch_id' => $cart->pharmacy_branch_id,
+      //     'pharmacy_id' => $cart->pharmacy_id,
+      //   );
+      //   DB::table('products')->insert($data);
+      // }
     }
 
     public function manualOrderIem($orderId, $data)
