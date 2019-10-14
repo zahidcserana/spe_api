@@ -56,6 +56,33 @@ class MedicineController extends Controller
         return response()->json($data);
     }
 
+    public function searchMedicineFromInventory(Request $request)
+    {
+        $str = $request->input('search');
+
+        $companyData = $request->input('company') ? MedicineCompany::where('company_name', 'like', $request->input('company'))->first() : 0;
+        $company_id =  $companyData ? $companyData->id : 0;
+        $pharmacyMedicineIds = DB::table('products')->select('medicine_id')->distinct()->pluck('medicine_id');
+
+        $medicines = Medicine::where('brand_name', 'like', $str . '%')
+            ->when($company_id, function ($query, $company_id) {
+                return $query->where('company_id', $company_id);
+            })
+            ->when($pharmacyMedicineIds, function ($query, $pharmacyMedicineIds) {
+                return $query->whereIn('id', $pharmacyMedicineIds);
+            })
+            ->orWhere('id', $str)
+            ->inRandomOrder()
+            ->limit(10)
+            ->get();
+        $data = array();
+        foreach ($medicines as $medicine) {
+            $medicineStr = $medicine->brand_name . ' (' . $medicine->strength . ',' . $medicine->medicineType->name . ')';
+            $data[] = ['id' => $medicine->id, 'name' => $medicineStr];
+        }
+        return response()->json($data);
+    }
+
     public function batchList(Request $request)
     {
         $batches = DB::table('products')->where('medicine_id', $request->input('medicine_id'))->pluck('batch_no');
