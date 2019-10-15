@@ -17,7 +17,7 @@ class Sale extends Model
         if (empty($cartData)) {
             return ['success' => false, 'error' => 'Something went wrong!'];
         }
-
+        $data['discount'] = empty($data['discount']) ? 0 : $data['discount'];
         $input = array(
             'customer_name' => $data['customer_name'] ?? '',
             'customer_mobile' => $data['customer_mobile'] ?? '',
