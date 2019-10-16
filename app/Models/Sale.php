@@ -302,7 +302,7 @@ class Sale extends Model
         $order = $this::findOrFail($orderId);
         $data = array(
             'sub_total' => $orderItem->total_sub_total,
-            'total_payble_amount' => $orderItem->total_payble_amount - $order->discount,
+            'total_payble_amount' => $orderItem->total_sub_total - $order->discount,
         );
         $order->update($data);
         return true;
