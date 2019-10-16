@@ -415,6 +415,7 @@ class OrderController extends Controller
         $UpdateItemInfo = OrderItem::find($update_item_id);
         $piece_per_box = $UpdateItemInfo->pieces_per_box;
         $trade_price = $UpdateItemInfo->trade_price;
+        $box_vat = $UpdateItemInfo->box_vat ? $UpdateItemInfo->box_vat : 0;
         $update_medicine_id = $UpdateItemInfo->medicine_id;
 
         $previous_total_qty = $piece_per_box * $previous_quantity;
@@ -424,7 +425,7 @@ class OrderController extends Controller
         {
             $updated_product_quantity = $previous_total_qty - $new_total_qty;
             
-            $total_price = $trade_price * $update_new_qty;
+            $total_price = ($trade_price + $box_vat) * $update_new_qty;
             $grandTotalPrice = $total_price;
 
             $UpdateItemInfo->is_modified = 1;
@@ -444,16 +445,18 @@ class OrderController extends Controller
             }
 
             $UpdateOrderInfo = Order::find($orderId);
-            $tax_type = $UpdateOrderInfo->tax_type;
-            $tax = $UpdateOrderInfo->tax;
+            //$tax_type = $UpdateOrderInfo->tax_type;
+            //$tax = $UpdateOrderInfo->tax;
             $discount = $UpdateOrderInfo->discount;
 
-            if($tax_type == "percentage"){
-                $total_vat = ($grandTotalPrice * $tax) / 100;
-                $sub_total = $grandTotalPrice + $total_vat + $discount;
-            }else{
-                $sub_total = $grandTotalPrice + $tax + $discount;
-            }
+            $sub_total = $grandTotalPrice - $discount;
+
+            // if($tax_type == "percentage"){
+            //     $total_vat = ($grandTotalPrice * $tax) / 100;
+            //     $sub_total = $grandTotalPrice + $total_vat + $discount;
+            // }else{
+            //     $sub_total = $grandTotalPrice + $tax + $discount;
+            // }
 
             $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
             
@@ -477,12 +480,12 @@ class OrderController extends Controller
 
             $updated_product_quantity = $new_total_qty - $previous_total_qty;
 
-            $total_price = $trade_price * $update_new_qty;
+            $total_price = ($trade_price + $box_vat) * $update_new_qty;
             $grandTotalPrice = $total_price;
 
             $UpdateItemInfo->is_modified = 1;
             $UpdateItemInfo->quantity = $update_new_qty;
-            $UpdateItemInfo->modified_qty = $update_new_qty - $previous_quantity;
+            $UpdateItemInfo->modified_qty = $previous_quantity + $update_new_qty;
             $UpdateItemInfo->sub_total = $total_price;
             $UpdateItemInfo->total = $total_price;
             $UpdateItemInfo->status = "RETURNED";
@@ -497,15 +500,19 @@ class OrderController extends Controller
             }
 
             $UpdateOrderInfo = Order::find($orderId);
-            $tax_type = $UpdateOrderInfo->tax_type;
-            $tax = $UpdateOrderInfo->tax;
+            // $tax_type = $UpdateOrderInfo->tax_type;
+            // $tax = $UpdateOrderInfo->tax;
             $discount = $UpdateOrderInfo->discount;
-            if($tax_type == "percentage"){
-                $total_vat = ($grandTotalPrice * $tax) / 100;
-                $sub_total = $grandTotalPrice + $total_vat + $discount;
-            }else{
-                $sub_total = $grandTotalPrice + $tax + $discount;
-            }
+
+            $sub_total = $grandTotalPrice - $discount;
+
+            // if($tax_type == "percentage"){
+            //     $total_vat = ($grandTotalPrice * $tax) / 100;
+            //     $sub_total = $grandTotalPrice + $total_vat + $discount;
+            // }else{
+            //     $sub_total = $grandTotalPrice + $tax + $discount;
+            // }
+
             $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
             
             $due = $sub_total - $total_advance_amount;
