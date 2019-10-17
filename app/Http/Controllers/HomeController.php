@@ -54,8 +54,8 @@ class HomeController extends Controller
             $details_data[] = array('order_details' => $order, 'order_items' => $items);
         endforeach;
 
-        $saleData = [];
-        $orders = DB::table('products')->where('is_sync', 0)->where('status', '<>', 'CANCEL')->get();
+        // $saleData = [];
+        // $orders = DB::table('products')->where('is_sync', 0)->where('status', '<>', 'CANCEL')->get();
 
         foreach ($orders as $order) :
             $items = $order->items()->get();
@@ -68,9 +68,9 @@ class HomeController extends Controller
         //     ->get();
 
         $itemIds = array();
-        foreach ($statusData as $item) {
-            $itemIds[] = $item->id;
-        }
+        // foreach ($statusData as $item) {
+        //     $itemIds[] = $item->id;
+        // }
         /** status sync end */
 
         $data = array(
