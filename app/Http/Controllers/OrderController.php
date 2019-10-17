@@ -735,6 +735,55 @@ class OrderController extends Controller
         ));
     }
 
+    public function purchaseListFilter(Request $request){
+        $details = $request->details;
+
+        $invoice = $details['invoice'] ? $details['invoice'] : 0;
+        $start_date = $details['start_date'];
+        $end_date = $details['end_date'];
+
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+
+        if ($start_date) {
+            $where = array_merge(array([DB::raw('DATE(orders.purchase_date)'), '>=', $start_date]), $where);
+            $where = array_merge(array([DB::raw('DATE(orders.purchase_date)'), '<=', $end_date]), $where);
+        }
+
+        $query = Order::select('orders.id as order_id',
+            'orders.invoice',
+            'orders.company_invoice',
+            'medicine_companies.company_name',
+            'orders.purchase_date',
+            'orders.quantity',
+            'orders.sub_total',
+            'orders.tax as vat',
+            'orders.tax_type as vat_type',
+            'orders.discount',
+            'orders.total_amount',
+            'orders.total_payble_amount',
+            'orders.total_advance_amount',
+            'orders.total_due_amount',
+            'orders.status',
+            'orders.created_by')
+            ->where($where)
+            ->when($invoice, function ($query, $invoice) {
+                return $query->where('orders.invoice', $invoice);
+            })
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
+
+        $total = $query->count();
+        $orders = $query
+            ->orderBy('orders.id', 'desc')
+            ->get();
+
+        return response()->json(array(
+            'total' => $total,
+            'data' => $orders,
+        ));
+    }
+
     public function purchaseDueList(Request $request){
         $query = $request->query();
 
