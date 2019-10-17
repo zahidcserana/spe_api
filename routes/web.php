@@ -65,6 +65,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('sales/report', ['uses' => 'SaleController@report']);
                 $router->get('sales/due', ['uses' => 'SaleController@saleDueList']);
                 $router->post('sales/payout', ['uses' => 'SaleController@payout']);
+                $router->post('sales/discount', ['uses' => 'SaleController@discount']);
                 $router->get('reports/sale/latest', ['uses' => 'SaleController@latestSale']);
                 $router->get('medicines/search/sale', ['uses' => 'MedicineController@searchByPharmacy']);
                 $router->post('medicines/batch', ['uses' => 'MedicineController@batchList']);
@@ -92,7 +93,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/due/save', ['uses' => 'OrderController@purchaseDueSave']);
                 $router->post('purchase/item/details/update', ['uses' => 'OrderController@purchaseItemDetailsUpdate']);
                 $router->post('purchase/item/delete', ['uses' => 'OrderController@purchaseItemDetailsDelete']);
-                
+
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);

@@ -65,6 +65,29 @@ class SaleController extends Controller
         }
         return response()->json(['success' => false, 'data' => $saleModel->getOrderDetails($saleData->id)]);
     }
+    public function discount(Request $request)
+    {
+        $user = $request->auth;
+        $data = $request->all();
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_by'] = $user->id;
+        $saleData = Sale::where('id', $data['id'])->first();
+
+        // $dueLog = $this->_dueLog($saleData, $data);
+
+        $input = array(
+          'total_payble_amount' => $data['total_payble_amount'] ?? 0,
+          'discount' => $data['discount'] ?? 0,
+          'updated_at' => $data['updated_at'],
+          'updated_by' => $data['updated_by'],
+        );
+        $saleModel = new Sale();
+        if ($saleData->update($input)) {
+          // $saleModel->updateOrder($saleData->sale_id);
+          return response()->json(['success' => true, 'data' => $saleModel->getOrderDetails($saleData->id)]);
+        }
+        return response()->json(['success' => false, 'data' => $saleModel->getOrderDetails($saleData->id)]);
+    }
 
     public function saleDueList(Request $request)
     {
