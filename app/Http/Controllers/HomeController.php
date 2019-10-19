@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Sale;
+use App\Models\Product;
 use App\Models\SaleItem;
 use App\Models\Notification;
 use App\Models\InventoryDetail;
@@ -576,6 +577,33 @@ class HomeController extends Controller
             'data' => 'Notification has been updated!',
             'status' => 'Successful'
         ));
+    }
+
+    public function generateLowStockNotification(Request $request)
+    {
+        $user = $request->auth;
+        $pharmacy_branch_id = $user->pharmacy_branch_id;
+
+        $lowStoclItems = Product::select('products.medicine_id', 'medicines.brand_name', 'products.exp_date')
+        ->where('products.quantity', '<',  100)
+        ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+        ->get();
+
+        foreach ($lowStoclItems as $item):
+            $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'LOW_QTY')->get();
+            if(!sizeof($alreadyExist)){
+                $details = $item->brand_name. ', The stock quantity is bellow 100. Please update the stock!';
+                $insertNotification = new Notification();
+                $insertNotification->category = "LOW_QTY";
+                $insertNotification->details = $details;
+                $insertNotification->pharmacy_branch_id = $pharmacy_branch_id;
+                $insertNotification->medicine_id = $item->medicine_id;
+                $insertNotification->notification_date = date('Y-m-d');
+                $insertNotification->importance = 4;
+                $insertNotification->save();
+            }
+        endforeach;
+
     }
 
     public function getNotificationList(Request $request)
