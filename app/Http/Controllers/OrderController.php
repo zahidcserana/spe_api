@@ -636,6 +636,17 @@ class OrderController extends Controller
             $medicine = Medicine::where('id', $medicine_id)->get();
             if(sizeof($medicine)){
                 $company_id = $medicine[0]->company_id;
+            }else{
+                DB::table('order_items')->where('order_id', $OrderId)->delete();
+                $DeleteOrderInfo = Order::find($OrderId);
+                $DeleteOrderInfo->delete();
+
+                $message = $item['medicine'] . ", Medecine Not Found! Please check the list!";
+                return response()->json(['message' => $message], 404);
+            }
+
+            if($item['box_vat'] == ''){
+                $item['box_vat'] = 0;
             }
 
             $itemSave = new OrderItem();
@@ -649,7 +660,7 @@ class OrderController extends Controller
             $itemSave->sub_total        = $item['amount'];
             $itemSave->mrp              = $item['box_mrp'];
             $itemSave->trade_price      = $item['box_trade_price'];
-            $itemSave->box_vat          = $item['box_vat'];
+            $itemSave->box_vat          = $item['box_vat'] ? $item['box_vat'] : 0;
             $itemSave->total            = $item['amount'];
             $itemSave->pieces_per_box   = $item['piece_per_box'];
             $itemSave->save();

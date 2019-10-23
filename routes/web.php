@@ -142,6 +142,7 @@ $router->group(['prefix' => 'api'],
 
                 /** Notification List */
                 $router->get('notification/list', ['uses' => 'HomeController@getNotificationList']);
+                $router->post('notification/generateLowStockNotification', ['uses' => 'HomeController@generateLowStockNotification']);
 
             }
         );
