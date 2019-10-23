@@ -14,7 +14,6 @@ class CartController extends Controller
     public function addToCart(Request $request)
     {
         $user = $request->auth;
-
         $data = $request->all();
 
         $this->validate($request, [

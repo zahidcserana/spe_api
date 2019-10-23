@@ -222,59 +222,6 @@ class SaleController extends Controller
 
         return response()->json($result);
     }
-  /*
-        public function checkIsLastItem($itemId)
-        {
-            $item = OrderItem::find($itemId);
-
-            $status = false;
-            $order = OrderItem::where('order_id', $item->order_id)->count();
-
-            if ($order > 1) {
-                $status = true;
-            }
-            return response()->json(['status' => $status]);
-        }
-
-        public function manualOrder(Request $request)
-        {
-            $user = $request->auth;
-
-            $data = $request->all();
-
-            $orderModel = new Order();
-            $order = $orderModel->makeManualOrder($data, $user);
-
-            return response()->json($order);
-        }
-
-        public function manualPurchase(Request $request)
-        {
-            $user = $request->auth;
-
-            $data = $request->all();
-
-            $orderModel = new Order();
-            $order = $orderModel->makeManualPurchase($data, $user);
-
-            return response()->json($order);
-        }
-
-        public function orderItems(Request $request)
-        {
-            $pageNo = $request->query('page_no') ?? 1;
-            $limit = $request->query('limit') ?? 1000;
-            $offset = (($pageNo - 1) * $limit);
-            $where = array();
-            $user = $request->auth;
-
-            $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-
-            $orderModel = new Order();
-            $orders = $orderModel->getAllOrder($where, $offset, $limit);
-
-            return response()->json($orders);
-        }*/
 
     public function view($saleId)
     {
@@ -505,25 +452,8 @@ class SaleController extends Controller
       $changeLog[] = $data;
       return $changeLog;
     }
-  /*
-    public function statusUpdate(Request $request)
-    {
-        $updateQuery = $request->all();
-        $updateQuery['updated_at'] = date('Y-m-d H:i:s');
 
-        $changeStatus = OrderItem::find($request->item_id)->is_status_updated;
-        if ($changeStatus) {
-            return response()->json(['success' => false, 'error' => 'Status Already changed']);
-        }
-        unset($updateQuery['item_id']);
-        $updateQuery['is_status_updated'] = true;
-        if (OrderItem::find($request->item_id)->update($updateQuery)) {
-            return response()->json(['success' => true, 'status' => OrderItem::find($request->item_id)->status]);
-        }
-        return response()->json(['success' => false, 'error' => 'Already changed']);
-    }
-
-    public function saleReport_Old(Request $request)
+    public function saleReport(Request $request)
     {
         $query = $request->query();
 
@@ -545,55 +475,118 @@ class SaleController extends Controller
         }
 
         $query = Sale::where($where)
-            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id');
+            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
+            ->join('users', 'sales.created_by', '=', 'users.id');
 
         $total = $query->count();
         $orders = $query
+            ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount','sales.total_due_amount as sale_due',
+            'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.total_payble_amount as total_price','sale_items.unit_price as mrp',
+            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name')
             ->orderBy('sales.id', 'desc')
-            ->offset($offset)
-            ->limit($limit)
             ->get();
-        $orderData = array();
-        foreach ($orders as $item) {
-            //$items = $order->items()->get();
+
+            // dd($orders);
+
+        // $orderData = array();
+        // foreach ($orders as $item) {
+        //     $aData = array();
+        //     $aData['id'] = $item->id;
+        //     $aData['sale_id'] = $item->sale_id;
+        //     $aData['sales_man'] = $item->name;
+        //     $aData['created_at'] = $item->created_at;
+        //     $aData['total_payble_amount'] = $item->total_payble_amount;
+        //     $aData['discount'] = $item->discount;
+        //     $aData['customer'] = ['name' => $item->customer_name, 'mobile' => $item->customer_mobile];
+        //
+        //     $company = MedicineCompany::findOrFail($item->company_id);
+        //     $aData['company'] = ['id' => $company->id, 'name' => $company->company_name];
+        //
+        //     $aData['invoice'] = $item->invoice;
+        //     $aData['is_sync'] = 0;
+        //
+        //     $medicine = Medicine::findOrFail($item->medicine_id);
+        //     $aData['medicine'] = ['id' => $medicine->id, 'brand_name' => $medicine->brand_name];
+        //
+        //     $aData['exp_date'] = date("M, Y", strtotime($item->exp_date));
+        //     $aData['purchase_date'] = date("F, Y", strtotime($item->purchase_date));
+        //     //$aData['exp_date'] = date("F, Y", strtotime($item->exp_date));
+        //     $aData['exp_status'] = $this->_getExpStatus($item->exp_date);
+        //     $aData['mfg_date'] = date("M, Y", strtotime($item->mfg_date));
+        //
+        //     //$aData['mfg_date'] = $item->mfg_date;
+        //     $aData['batch_no'] = $item->batch_no;
+        //     $aData['quantity'] = $item->quantity;
+        //     $aData['sub_total'] = $item->sub_total;
+        //     $aData['unit_type'] = $item->unit_type;
+        //     $aData['status'] = '';
+        //
+        //     $orderData[] = $aData;
+        // }
+
+        $result = array();
+        foreach ($orders as $element) {
+            $result[$element['sale_id']][] = $element;
+        }
+
+        $array = array();
+        foreach ($result as $i=>$item) {
+          $items = array();
+          $t = 0;
+          foreach ($item as $aItem) {
+            if($t == 0) {
+              $saleData = array(
+                'sale_id' => $i,
+                'invoice' => $aItem->invoice,
+                'sale_date' => $aItem->sale_date,
+                'sales_man' => $aItem->name,
+                'customer' => ['name'=>$aItem->name,'mobile'=>$aItem->user_mobile],
+                'sale_amount' => $aItem->sale_amount,
+                'sale_discount' => $aItem->sale_discount,
+                'grand_total' => $aItem->total_payble_amount
+              );
+            }
             $aData = array();
-            $aData['id'] = $item->id;
-            $aData['order_id'] = $item->order_id;
+            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'name'=>$aItem->brand_name];
+            $aData['quantity'] = $aItem->quantity;
+            $aData['item_amount'] = $aItem->item_amount;
+            $aData['quantity'] = $aItem->quantity;
+            $aData['mrp'] = $aItem->mrp;
+            $aData['total_price'] = $aItem->total_price;
+            $items[] = $aData;
+            $t++;
+          }
+          $saleData['item'] = $items;
 
-            $company = MedicineCompany::findOrFail($item->company_id);
-            $aData['company'] = ['id' => $company->id, 'name' => $company->company_name];
-
-            $aData['company_invoice'] = $item->invoice;
-            $aData['is_sync'] = 0;
-
-            $medicine = Medicine::findOrFail($item->medicine_id);
-            $aData['medicine'] = ['id' => $medicine->id, 'brand_name' => $medicine->brand_name];
-
-            $aData['exp_date'] = date("M, Y", strtotime($item->exp_date));
-            $aData['purchase_date'] = date("F, Y", strtotime($item->purchase_date));
-            //$aData['exp_date'] = date("F, Y", strtotime($item->exp_date));
-            $aData['exp_status'] = $this->_getExpStatus($item->exp_date);
-            $aData['mfg_date'] = date("M, Y", strtotime($item->mfg_date));
-
-            //$aData['mfg_date'] = $item->mfg_date;
-            $aData['batch_no'] = $item->batch_no;
-            $aData['quantity'] = $item->quantity;
-            $aData['sub_total'] = $item->sub_total;
-            $aData['unit_type'] = $item->unit_type;
-            $aData['status'] = '';
-
-            $orderData[] = $aData;
+          $array[] = $saleData;
         }
 
         $data = array(
-            'total' => $total,
-            'data' => $orderData,
-            'page_no' => $pageNo,
-            'limit' => $limit,
+            'data' => $array
         );
 
         return response()->json($data);
     }
+  /*
+    public function statusUpdate(Request $request)
+    {
+        $updateQuery = $request->all();
+        $updateQuery['updated_at'] = date('Y-m-d H:i:s');
+
+        $changeStatus = OrderItem::find($request->item_id)->is_status_updated;
+        if ($changeStatus) {
+            return response()->json(['success' => false, 'error' => 'Status Already changed']);
+        }
+        unset($updateQuery['item_id']);
+        $updateQuery['is_status_updated'] = true;
+        if (OrderItem::find($request->item_id)->update($updateQuery)) {
+            return response()->json(['success' => true, 'status' => OrderItem::find($request->item_id)->status]);
+        }
+        return response()->json(['success' => false, 'error' => 'Already changed']);
+    }
+
+
 
     public function getOrderList(Request $request)
     {
