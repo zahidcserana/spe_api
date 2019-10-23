@@ -638,6 +638,10 @@ class OrderController extends Controller
                 $company_id = $medicine[0]->company_id;
             }
 
+            if($item['box_vat'] == ''){
+                $item['box_vat'] = 0;
+            }
+
             $itemSave = new OrderItem();
             $itemSave->medicine_id      = $item['medicine_id'];
             $itemSave->company_id       = $company_id;
@@ -649,7 +653,7 @@ class OrderController extends Controller
             $itemSave->sub_total        = $item['amount'];
             $itemSave->mrp              = $item['box_mrp'];
             $itemSave->trade_price      = $item['box_trade_price'];
-            $itemSave->box_vat          = $item['box_vat'];
+            $itemSave->box_vat          = $item['box_vat'] ? $item['box_vat'] : 0;
             $itemSave->total            = $item['amount'];
             $itemSave->pieces_per_box   = $item['piece_per_box'];
             $itemSave->save();
