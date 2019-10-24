@@ -470,6 +470,9 @@ class SaleController extends Controller
         if (!empty($query['sales_man'])) {
             $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man'] . '%']), $where);
         }
+        if (!empty($query['user_id'])) {
+            $where = array_merge(array(['users.id', $query['user_id']]), $where);
+        }
         if (!empty($query['sale_date'])) {
             $dateRange = explode(',',$query['sale_date']);
             // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
@@ -506,9 +509,6 @@ class SaleController extends Controller
             ->orderBy('sales.id', 'desc')
             ->get();
 
-        return response()->json($orders);
-
-
         $result = array();
         foreach ($orders as $element) {
             $result[$element['sale_id']][] = $element;
@@ -518,6 +518,8 @@ class SaleController extends Controller
         $sum_total_profit = 0;
         $sum_sale_amount = 0;
         $sum_sale_discount = 0;
+        $sum_grand_total = 0;
+        $sum_sale_due = 0;
 
         foreach ($result as $i=>$item) {
           $items = array();
@@ -536,6 +538,11 @@ class SaleController extends Controller
                 'sale_due' => $aItem->sale_due,
                 'grand_total' => $aItem->total_payble_amount
               );
+
+              $sum_sale_amount += $aItem->sale_amount;
+              $sum_sale_discount += $aItem->sale_discount;
+              $sum_grand_total += $aItem->total_payble_amount;
+              $sum_sale_due += $aItem->sale_due;
             }
             $sub_tp = $aItem->tp * $aItem->quantity;
             $profit = $aItem->sub_total - $sub_tp;
@@ -551,14 +558,24 @@ class SaleController extends Controller
             $items[] = $aData;
             $t++;
           }
+          $sum_total_profit += $total_profit;
           $saleData['total_profit'] = $total_profit;
           $saleData['item'] = $items;
 
           $array[] = $saleData;
         }
 
+        $sammary = array(
+          'sum_total_profit' => $sum_total_profit,
+          'sum_sale_amount' => $sum_sale_amount,
+          'sum_sale_discount' => $sum_sale_discount,
+          'sum_grand_total' => $sum_grand_total,
+          'sum_sale_due' => $sum_sale_due,
+        );
+
         $data = array(
-            'data' => $array
+            'data' => $array,
+            'sammary' => $sammary,
         );
 
         return response()->json($data);
