@@ -75,10 +75,11 @@ class SaleItem extends Model
     public function updateInventoryQuantity($item, $quantity, $status = 'add') {
       $inventory = DB::table('products')->where('medicine_id', $item->medicine_id)->first();
       if($inventory) {
-        $aQty = $status == 'add' ? $inventory->sale_quantity + $quantity : $inventory->sale_quantity - $quantity;
+        $aQty = $status == 'add' ? $inventory->quantity + $quantity : $inventory->quantity - $quantity;
         $data = array(
-          'sale_quantity' => $aQty < 0 ? 0 : $aQty
+          'quantity' => $aQty < 0 ? 0 : $aQty
         );
+
         DB::table('products')->where('id', $inventory->id)->update($data);
       }
       // else {
