@@ -464,14 +464,32 @@ class SaleController extends Controller
         $user = $request->auth;
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
 
-        if (!empty($query['company_invoice'])) {
-            $where = array_merge(array(['orders.company_invoice', 'LIKE', '%' . $query['company_invoice'] . '%']), $where);
+        if (!empty($query['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
         }
-        if (!empty($query['batch_no'])) {
-            $where = array_merge(array(['order_items.batch_no', 'LIKE', '%' . $query['batch_no'] . '%']), $where);
+        if (!empty($query['sales_man'])) {
+            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man'] . '%']), $where);
         }
-        if (!empty($query['exp_type'])) {
-            $where = $this->_getExpCondition($where, $query['exp_type']);
+        if (!empty($query['sale_date'])) {
+            $dateRange = explode(',',$query['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+        }
+        if (!empty($query['company_id'])) {
+          $where = array_merge(array(['sale_items.company_id', $query['company_id']]), $where);
+        }
+        if (!empty($query['product_id'])) {
+          $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
+        }
+        if (!empty($query['product_type_id'])) {
+          $where = array_merge(array(['sale_items.product_type', $query['product_type_id']]), $where);
+        }
+        if (!empty($query['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($query['customer_name'])) {
+            $where = array_merge(array(['sales.customer_name', 'LIKE', '%' . $query['customer_name'] . '%']), $where);
         }
 
         $query = Sale::where($where)
@@ -497,12 +515,8 @@ class SaleController extends Controller
         foreach ($result as $i=>$item) {
           $items = array();
           $t = 0;
-          // $total_tp = 0;
-          // $total_mrp = 0;
           $total_profit = 0;
           foreach ($item as $aItem) {
-            // $total_tp+= $aItem->tp;
-            // $total_mrp+= $aItem->mrp;
             if($t == 0) {
               $saleData = array(
                 'sale_id' => $i,
@@ -530,10 +544,8 @@ class SaleController extends Controller
             $items[] = $aData;
             $t++;
           }
-          $saleData['item'] = $items;
-          // $saleData['total_tp'] = $total_tp;
-          // $saleData['total_mrp'] = $total_mrp;
           $saleData['total_profit'] = $total_profit;
+          $saleData['item'] = $items;
 
           $array[] = $saleData;
         }
@@ -728,48 +740,48 @@ class SaleController extends Controller
         ));
     }*/
 
-    private function _getExpStatus($date)
-    {
-        $expDate = date("F, Y", strtotime($date));
+    // private function _getExpStatus($date)
+    // {
+    //     $expDate = date("F, Y", strtotime($date));
+    //
+    //     $today = date('Y-m-d');
+    //     $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+    //     $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+    //     if ($date < $today) {
+    //         return 'EXP';
+    //     } else if ($date >= $today && $date <= $exp1M) {
+    //         return '1M';
+    //     } else if ($date > $exp1M && $date <= $exp3M) {
+    //         return '3M';
+    //     } else {
+    //         return 'OK';
+    //     }
+    // }
 
-        $today = date('Y-m-d');
-        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
-        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
-        if ($date < $today) {
-            return 'EXP';
-        } else if ($date >= $today && $date <= $exp1M) {
-            return '1M';
-        } else if ($date > $exp1M && $date <= $exp3M) {
-            return '3M';
-        } else {
-            return 'OK';
-        }
-    }
-
-    private function _getExpCondition($where, $expTpe)
-    {
-        $today = date('Y-m-d');
-        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
-        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
-        if ($expTpe == 2) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $today],
-                ['order_items.exp_date', '<', $exp1M]
-            ), $where);
-        } else if ($expTpe == 3) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $exp1M],
-                ['order_items.exp_date', '<', $exp3M]
-            ), $where);
-        } else if ($expTpe == 1) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $exp3M]
-            ), $where);
-        } else if ($expTpe == 4) {
-            $where = array_merge(array(['order_items.exp_date', '<', $today]), $where);
-        }
-        return $where;
-    }
+    // private function _getExpCondition($where, $expTpe)
+    // {
+    //     $today = date('Y-m-d');
+    //     $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+    //     $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+    //     if ($expTpe == 2) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $today],
+    //             ['order_items.exp_date', '<', $exp1M]
+    //         ), $where);
+    //     } else if ($expTpe == 3) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $exp1M],
+    //             ['order_items.exp_date', '<', $exp3M]
+    //         ), $where);
+    //     } else if ($expTpe == 1) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $exp3M]
+    //         ), $where);
+    //     } else if ($expTpe == 4) {
+    //         $where = array_merge(array(['order_items.exp_date', '<', $today]), $where);
+    //     }
+    //     return $where;
+    // }
 
 
 }
