@@ -98,8 +98,9 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/item/delete', ['uses' => 'OrderController@purchaseItemDetailsDelete']);
 
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
-                //purchase/list
+                //purchase/list 
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
+                $router->get('master/purchase/list', ['uses' => 'OrderController@masterPurchaseList']);
                 $router->post('purchase/item/filter', ['uses' => 'OrderController@purchaseListFilter']);
                 $router->get('purchase/due/list', ['uses' => 'OrderController@purchaseDueList']);
 
@@ -143,6 +144,9 @@ $router->group(['prefix' => 'api'],
                 /** Notification List */
                 $router->get('notification/list', ['uses' => 'HomeController@getNotificationList']);
                 $router->post('notification/generateLowStockNotification', ['uses' => 'HomeController@generateLowStockNotification']);
+
+                /** sales/persons/list */
+                $router->get('sales/persons/list', ['uses' => 'HomeController@getSalePersonsList']);
 
             }
         );
