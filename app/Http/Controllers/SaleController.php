@@ -222,59 +222,6 @@ class SaleController extends Controller
 
         return response()->json($result);
     }
-  /*
-        public function checkIsLastItem($itemId)
-        {
-            $item = OrderItem::find($itemId);
-
-            $status = false;
-            $order = OrderItem::where('order_id', $item->order_id)->count();
-
-            if ($order > 1) {
-                $status = true;
-            }
-            return response()->json(['status' => $status]);
-        }
-
-        public function manualOrder(Request $request)
-        {
-            $user = $request->auth;
-
-            $data = $request->all();
-
-            $orderModel = new Order();
-            $order = $orderModel->makeManualOrder($data, $user);
-
-            return response()->json($order);
-        }
-
-        public function manualPurchase(Request $request)
-        {
-            $user = $request->auth;
-
-            $data = $request->all();
-
-            $orderModel = new Order();
-            $order = $orderModel->makeManualPurchase($data, $user);
-
-            return response()->json($order);
-        }
-
-        public function orderItems(Request $request)
-        {
-            $pageNo = $request->query('page_no') ?? 1;
-            $limit = $request->query('limit') ?? 1000;
-            $offset = (($pageNo - 1) * $limit);
-            $where = array();
-            $user = $request->auth;
-
-            $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-
-            $orderModel = new Order();
-            $orders = $orderModel->getAllOrder($where, $offset, $limit);
-
-            return response()->json($orders);
-        }*/
 
     public function view($saleId)
     {
@@ -505,6 +452,110 @@ class SaleController extends Controller
       $changeLog[] = $data;
       return $changeLog;
     }
+
+    public function saleReport(Request $request)
+    {
+        $query = $request->query();
+
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 1000;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+
+        if (!empty($query['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
+        }
+        if (!empty($query['sales_man'])) {
+            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man'] . '%']), $where);
+        }
+        if (!empty($query['sale_date'])) {
+            $dateRange = explode(',',$query['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+        }
+        if (!empty($query['company_id'])) {
+          $where = array_merge(array(['sale_items.company_id', $query['company_id']]), $where);
+        }
+        if (!empty($query['product_id'])) {
+          $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
+        }
+        if (!empty($query['product_type_id'])) {
+          $where = array_merge(array(['sale_items.product_type', $query['product_type_id']]), $where);
+        }
+        if (!empty($query['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($query['customer_name'])) {
+            $where = array_merge(array(['sales.customer_name', 'LIKE', '%' . $query['customer_name'] . '%']), $where);
+        }
+
+        $query = Sale::where($where)
+            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
+            ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
+            ->join('users', 'sales.created_by', '=', 'users.id');
+
+        $total = $query->count();
+        $orders = $query
+            ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount','sales.total_due_amount as sale_due',
+            'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.unit_price as mrp','sale_items.tp',
+            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type')
+            ->orderBy('sales.id', 'desc')
+            ->get();
+
+        $result = array();
+        foreach ($orders as $element) {
+            $result[$element['sale_id']][] = $element;
+        }
+
+        $array = array();
+        foreach ($result as $i=>$item) {
+          $items = array();
+          $t = 0;
+          $total_profit = 0;
+          foreach ($item as $aItem) {
+            if($t == 0) {
+              $saleData = array(
+                'sale_id' => $i,
+                'invoice' => $aItem->invoice,
+                'sale_date' => $aItem->sale_date,
+                'sales_man' => $aItem->name,
+                'customer' => ['name'=>$aItem->name,'mobile'=>$aItem->user_mobile],
+                'sale_amount' => $aItem->sale_amount,
+                'sale_discount' => $aItem->sale_discount,
+                'sale_due' => $aItem->sale_due,
+                'grand_total' => $aItem->total_payble_amount
+              );
+            }
+            $sub_tp = $aItem->tp * $aItem->quantity;
+            $profit = $aItem->sub_total - $sub_tp;
+            $total_profit += $profit;
+            $aData = array();
+            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'name'=>$aItem->brand_name, 'strength'=>$aItem->strength, 'medicine_type'=>$aItem->medicine_type];
+            $aData['quantity'] = $aItem->quantity;
+            $aData['mrp'] = $aItem->mrp;
+            $aData['tp'] = $aItem->tp;
+            $aData['sub_tp'] = $sub_tp;
+            $aData['profit'] = $profit;
+            $aData['sub_total'] = $aItem->sub_total;
+            $items[] = $aData;
+            $t++;
+          }
+          $saleData['total_profit'] = $total_profit;
+          $saleData['item'] = $items;
+
+          $array[] = $saleData;
+        }
+
+        $data = array(
+            'data' => $array
+        );
+
+        return response()->json($data);
+    }
   /*
     public function statusUpdate(Request $request)
     {
@@ -523,77 +574,7 @@ class SaleController extends Controller
         return response()->json(['success' => false, 'error' => 'Already changed']);
     }
 
-    public function saleReport_Old(Request $request)
-    {
-        $query = $request->query();
 
-        $pageNo = $request->query('page_no') ?? 1;
-        $limit = $request->query('limit') ?? 1000;
-        $offset = (($pageNo - 1) * $limit);
-        $where = array();
-        $user = $request->auth;
-        $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-
-        if (!empty($query['company_invoice'])) {
-            $where = array_merge(array(['orders.company_invoice', 'LIKE', '%' . $query['company_invoice'] . '%']), $where);
-        }
-        if (!empty($query['batch_no'])) {
-            $where = array_merge(array(['order_items.batch_no', 'LIKE', '%' . $query['batch_no'] . '%']), $where);
-        }
-        if (!empty($query['exp_type'])) {
-            $where = $this->_getExpCondition($where, $query['exp_type']);
-        }
-
-        $query = Sale::where($where)
-            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id');
-
-        $total = $query->count();
-        $orders = $query
-            ->orderBy('sales.id', 'desc')
-            ->offset($offset)
-            ->limit($limit)
-            ->get();
-        $orderData = array();
-        foreach ($orders as $item) {
-            //$items = $order->items()->get();
-            $aData = array();
-            $aData['id'] = $item->id;
-            $aData['order_id'] = $item->order_id;
-
-            $company = MedicineCompany::findOrFail($item->company_id);
-            $aData['company'] = ['id' => $company->id, 'name' => $company->company_name];
-
-            $aData['company_invoice'] = $item->invoice;
-            $aData['is_sync'] = 0;
-
-            $medicine = Medicine::findOrFail($item->medicine_id);
-            $aData['medicine'] = ['id' => $medicine->id, 'brand_name' => $medicine->brand_name];
-
-            $aData['exp_date'] = date("M, Y", strtotime($item->exp_date));
-            $aData['purchase_date'] = date("F, Y", strtotime($item->purchase_date));
-            //$aData['exp_date'] = date("F, Y", strtotime($item->exp_date));
-            $aData['exp_status'] = $this->_getExpStatus($item->exp_date);
-            $aData['mfg_date'] = date("M, Y", strtotime($item->mfg_date));
-
-            //$aData['mfg_date'] = $item->mfg_date;
-            $aData['batch_no'] = $item->batch_no;
-            $aData['quantity'] = $item->quantity;
-            $aData['sub_total'] = $item->sub_total;
-            $aData['unit_type'] = $item->unit_type;
-            $aData['status'] = '';
-
-            $orderData[] = $aData;
-        }
-
-        $data = array(
-            'total' => $total,
-            'data' => $orderData,
-            'page_no' => $pageNo,
-            'limit' => $limit,
-        );
-
-        return response()->json($data);
-    }
 
     public function getOrderList(Request $request)
     {
@@ -759,48 +740,48 @@ class SaleController extends Controller
         ));
     }*/
 
-    private function _getExpStatus($date)
-    {
-        $expDate = date("F, Y", strtotime($date));
+    // private function _getExpStatus($date)
+    // {
+    //     $expDate = date("F, Y", strtotime($date));
+    //
+    //     $today = date('Y-m-d');
+    //     $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+    //     $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+    //     if ($date < $today) {
+    //         return 'EXP';
+    //     } else if ($date >= $today && $date <= $exp1M) {
+    //         return '1M';
+    //     } else if ($date > $exp1M && $date <= $exp3M) {
+    //         return '3M';
+    //     } else {
+    //         return 'OK';
+    //     }
+    // }
 
-        $today = date('Y-m-d');
-        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
-        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
-        if ($date < $today) {
-            return 'EXP';
-        } else if ($date >= $today && $date <= $exp1M) {
-            return '1M';
-        } else if ($date > $exp1M && $date <= $exp3M) {
-            return '3M';
-        } else {
-            return 'OK';
-        }
-    }
-
-    private function _getExpCondition($where, $expTpe)
-    {
-        $today = date('Y-m-d');
-        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
-        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
-        if ($expTpe == 2) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $today],
-                ['order_items.exp_date', '<', $exp1M]
-            ), $where);
-        } else if ($expTpe == 3) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $exp1M],
-                ['order_items.exp_date', '<', $exp3M]
-            ), $where);
-        } else if ($expTpe == 1) {
-            $where = array_merge(array(
-                ['order_items.exp_date', '>', $exp3M]
-            ), $where);
-        } else if ($expTpe == 4) {
-            $where = array_merge(array(['order_items.exp_date', '<', $today]), $where);
-        }
-        return $where;
-    }
+    // private function _getExpCondition($where, $expTpe)
+    // {
+    //     $today = date('Y-m-d');
+    //     $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+    //     $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+    //     if ($expTpe == 2) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $today],
+    //             ['order_items.exp_date', '<', $exp1M]
+    //         ), $where);
+    //     } else if ($expTpe == 3) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $exp1M],
+    //             ['order_items.exp_date', '<', $exp3M]
+    //         ), $where);
+    //     } else if ($expTpe == 1) {
+    //         $where = array_merge(array(
+    //             ['order_items.exp_date', '>', $exp3M]
+    //         ), $where);
+    //     } else if ($expTpe == 4) {
+    //         $where = array_merge(array(['order_items.exp_date', '<', $today]), $where);
+    //     }
+    //     return $where;
+    // }
 
 
 }

@@ -32,6 +32,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         $userData = array(
             'name' => $data['name'],
             'pharmacy_branch_id' => $data['pharmacy_branch_id'] ?? '',
+            'pharmacy_id' => $data['pharmacy_id'] ?? '',
             'user_type' => $data['user_type'] ?? '',
             'user_mobile' => $data['user_mobile']??'',
             'email' => $data['email']??'',

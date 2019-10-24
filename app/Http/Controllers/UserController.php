@@ -20,10 +20,9 @@ class UserController extends Controller
     public function create(Request $request)
     {
       $user = $request->auth;
-
         $this->validate($request, [
             'name' => 'required',
-            'email' => 'required',
+            'email' => 'unique:users,email',
         ]);
         $data = $request->all();
         $data['pharmacy_branch_id'] = $user->pharmacy_branch_id;

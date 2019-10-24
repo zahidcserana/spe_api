@@ -55,6 +55,9 @@ $router->group(['prefix' => 'api'],
                 $router->post('carts/quantity-update', ['uses' => 'CartController@quantityUpdate']);
                 $router->post('carts/price-update', ['uses' => 'CartController@priceUpdate']);
 
+                /** Report Sale */
+                $router->get('sale/report', ['uses' => 'SaleController@saleReport']);
+
                 /** Sale Order */
                 $router->post('orders/sale', ['uses' => 'SaleController@create']);
                 $router->post('orders/sale/delete-item', ['uses' => 'SaleController@deleteItem']);
