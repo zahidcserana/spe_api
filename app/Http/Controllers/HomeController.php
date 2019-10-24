@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\OrderItem;
 use App\Models\Sale;
 use App\Models\Product;
@@ -617,6 +618,21 @@ class HomeController extends Controller
         return response()->json(array(
             'data' => $notifications,
             'status' => 'Successful'
+        ));
+    }
+
+    public function getSalePersonsList(Request $request){
+        $user = $request->auth;
+        $pharmacy_id = $user->pharmacy_id;
+        $pharmacy_branch_id = $user->pharmacy_branch_id;
+
+        $userList = User::select('id', 'name', 'email')->where('pharmacy_id', $pharmacy_id)->where('pharmacy_branch_id', $pharmacy_branch_id)
+        //->where('id', '!=', $user->id)
+        ->get();
+
+        return response()->json(array(
+            'data' => $userList,
+            'status' => 'List Successful!'
         ));
     }
 }

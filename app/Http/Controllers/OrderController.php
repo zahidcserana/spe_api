@@ -746,6 +746,16 @@ class OrderController extends Controller
         ));
     }
 
+    public function masterPurchaseList(Request $request){
+
+        return response()->json(array(
+            'total' => 'total',
+            'page_no' => '$pageNo',
+            'limit' => '$limit',
+            'data' => '$orders',
+        ));
+    }
+
     public function purchaseListFilter(Request $request){
         $details = $request->details;
 
