@@ -28,7 +28,8 @@ class CartItem extends Model
             'exp_date' => $medicineInfo? $medicineInfo->exp_date : null,
             'cart_id' => $data['cart_id'],
             'unit_type' => $data['unit_type'] ?? 'PCS',
-            'unit_price' => $medicineInfo ? $medicineInfo->mrp : null,
+            'unit_price' => $medicineInfo ? $medicineInfo->mrp : 0,
+            'tp' => $medicineInfo ? $medicineInfo->tp : 0,
             'sub_total' => $medicineInfo ? $medicineInfo->mrp * $data['quantity'] : null,
         );
 

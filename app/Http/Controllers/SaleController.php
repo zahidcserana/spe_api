@@ -477,53 +477,16 @@ class SaleController extends Controller
         $query = Sale::where($where)
             ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
             ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
+            ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
             ->join('users', 'sales.created_by', '=', 'users.id');
 
         $total = $query->count();
         $orders = $query
             ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount','sales.total_due_amount as sale_due',
-            'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.total_payble_amount as total_price','sale_items.unit_price as mrp',
-            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name')
+            'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.unit_price as mrp','sale_items.tp',
+            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type')
             ->orderBy('sales.id', 'desc')
             ->get();
-
-            // dd($orders);
-
-        // $orderData = array();
-        // foreach ($orders as $item) {
-        //     $aData = array();
-        //     $aData['id'] = $item->id;
-        //     $aData['sale_id'] = $item->sale_id;
-        //     $aData['sales_man'] = $item->name;
-        //     $aData['created_at'] = $item->created_at;
-        //     $aData['total_payble_amount'] = $item->total_payble_amount;
-        //     $aData['discount'] = $item->discount;
-        //     $aData['customer'] = ['name' => $item->customer_name, 'mobile' => $item->customer_mobile];
-        //
-        //     $company = MedicineCompany::findOrFail($item->company_id);
-        //     $aData['company'] = ['id' => $company->id, 'name' => $company->company_name];
-        //
-        //     $aData['invoice'] = $item->invoice;
-        //     $aData['is_sync'] = 0;
-        //
-        //     $medicine = Medicine::findOrFail($item->medicine_id);
-        //     $aData['medicine'] = ['id' => $medicine->id, 'brand_name' => $medicine->brand_name];
-        //
-        //     $aData['exp_date'] = date("M, Y", strtotime($item->exp_date));
-        //     $aData['purchase_date'] = date("F, Y", strtotime($item->purchase_date));
-        //     //$aData['exp_date'] = date("F, Y", strtotime($item->exp_date));
-        //     $aData['exp_status'] = $this->_getExpStatus($item->exp_date);
-        //     $aData['mfg_date'] = date("M, Y", strtotime($item->mfg_date));
-        //
-        //     //$aData['mfg_date'] = $item->mfg_date;
-        //     $aData['batch_no'] = $item->batch_no;
-        //     $aData['quantity'] = $item->quantity;
-        //     $aData['sub_total'] = $item->sub_total;
-        //     $aData['unit_type'] = $item->unit_type;
-        //     $aData['status'] = '';
-        //
-        //     $orderData[] = $aData;
-        // }
 
         $result = array();
         foreach ($orders as $element) {
@@ -534,7 +497,12 @@ class SaleController extends Controller
         foreach ($result as $i=>$item) {
           $items = array();
           $t = 0;
+          // $total_tp = 0;
+          // $total_mrp = 0;
+          $total_profit = 0;
           foreach ($item as $aItem) {
+            // $total_tp+= $aItem->tp;
+            // $total_mrp+= $aItem->mrp;
             if($t == 0) {
               $saleData = array(
                 'sale_id' => $i,
@@ -544,20 +512,28 @@ class SaleController extends Controller
                 'customer' => ['name'=>$aItem->name,'mobile'=>$aItem->user_mobile],
                 'sale_amount' => $aItem->sale_amount,
                 'sale_discount' => $aItem->sale_discount,
+                'sale_due' => $aItem->sale_due,
                 'grand_total' => $aItem->total_payble_amount
               );
             }
+            $sub_tp = $aItem->tp * $aItem->quantity;
+            $profit = $aItem->sub_total - $sub_tp;
+            $total_profit += $profit;
             $aData = array();
-            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'name'=>$aItem->brand_name];
-            $aData['quantity'] = $aItem->quantity;
-            $aData['item_amount'] = $aItem->item_amount;
+            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'name'=>$aItem->brand_name, 'strength'=>$aItem->strength, 'medicine_type'=>$aItem->medicine_type];
             $aData['quantity'] = $aItem->quantity;
             $aData['mrp'] = $aItem->mrp;
-            $aData['total_price'] = $aItem->total_price;
+            $aData['tp'] = $aItem->tp;
+            $aData['sub_tp'] = $sub_tp;
+            $aData['profit'] = $profit;
+            $aData['sub_total'] = $aItem->sub_total;
             $items[] = $aData;
             $t++;
           }
           $saleData['item'] = $items;
+          // $saleData['total_tp'] = $total_tp;
+          // $saleData['total_mrp'] = $total_mrp;
+          $saleData['total_profit'] = $total_profit;
 
           $array[] = $saleData;
         }
