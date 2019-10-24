@@ -506,12 +506,19 @@ class SaleController extends Controller
             ->orderBy('sales.id', 'desc')
             ->get();
 
+        return response()->json($orders);
+
+
         $result = array();
         foreach ($orders as $element) {
             $result[$element['sale_id']][] = $element;
         }
 
         $array = array();
+        $sum_total_profit = 0;
+        $sum_sale_amount = 0;
+        $sum_sale_discount = 0;
+
         foreach ($result as $i=>$item) {
           $items = array();
           $t = 0;
