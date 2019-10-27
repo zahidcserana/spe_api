@@ -453,6 +453,58 @@ class SaleController extends Controller
       return $changeLog;
     }
 
+    public function saleDueReport(Request $request)
+    {
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['sales.status', 'DUE']), $where);
+        $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        if (!empty($data['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
+        }
+        if (!empty($data['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($query['sale_date'])) {
+            $dateRange = explode(',',$query['sale_date']);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+        }else{
+          $today = date('Y-m-d');
+          $lastMonth = date("Y-m-d",strtotime("-1 month"));
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+        }
+        $query = Sale::where($where);
+        $total = $query->count();
+        $orders = $query
+            ->orderBy('sales.id', 'desc')
+            // ->offset($offset)
+            // ->limit($limit)
+            ->get();
+        $orderData = array();
+        foreach ($orders as $order) {
+            $aData = array();
+            $aData['id'] = $order->id;
+            $aData['customer_name'] = $order->customer_name;
+            $aData['customer_mobile'] = $order->customer_mobile;
+            $aData['invoice'] = $order->invoice;
+            $aData['total_payble_amount'] = $order->total_payble_amount;
+            $aData['total_due_amount'] = $order->total_due_amount;
+            $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
+            $aData['image'] = $order->file_name ?? '';
+            $orderData[] = $aData;
+        }
+        $data = array(
+            'data' => $orderData,
+        );
+        return response()->json($data);
+    }
+
     public function saleReport(Request $request)
     {
         $query = $request->query();
@@ -478,6 +530,11 @@ class SaleController extends Controller
             // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+        }else{
+          $today = date('Y-m-d');
+          $lastMonth = date("Y-m-d",strtotime("-1 month"));
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
         }
         if (!empty($query['company_id'])) {
           $where = array_merge(array(['sale_items.company_id', $query['company_id']]), $where);
@@ -532,7 +589,7 @@ class SaleController extends Controller
                 'invoice' => $aItem->invoice,
                 'sale_date' => $aItem->sale_date,
                 'sales_man' => $aItem->name,
-                'customer' => ['name'=>$aItem->name,'mobile'=>$aItem->user_mobile],
+                'customer' => ['name'=>$aItem->customer_name,'mobile'=>$aItem->customer_mobile],
                 'sale_amount' => $aItem->sale_amount,
                 'sale_discount' => $aItem->sale_discount,
                 'sale_due' => $aItem->sale_due,

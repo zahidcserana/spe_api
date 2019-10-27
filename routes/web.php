@@ -57,6 +57,7 @@ $router->group(['prefix' => 'api'],
 
                 /** Report Sale */
                 $router->get('sale/report', ['uses' => 'SaleController@saleReport']);
+                $router->get('sale/due/report', ['uses' => 'SaleController@saleDueReport']);
 
                 /** Sale Order */
                 $router->post('orders/sale', ['uses' => 'SaleController@create']);
@@ -98,7 +99,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/item/delete', ['uses' => 'OrderController@purchaseItemDetailsDelete']);
 
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
-                //purchase/list 
+                //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
                 $router->get('master/purchase/list', ['uses' => 'OrderController@masterPurchaseList']);
                 $router->post('purchase/item/filter', ['uses' => 'OrderController@purchaseListFilter']);
