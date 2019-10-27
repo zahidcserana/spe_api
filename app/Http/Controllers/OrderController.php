@@ -748,12 +748,43 @@ class OrderController extends Controller
 
     public function masterPurchaseList(Request $request){
 
+        $data = [];
+        $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.discount', 'orders.total_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name')
+        ->where('orders.status', 'ACCEPTED')
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id')
+        ->get();
+
+        foreach($orders as $order):
+            $order_id = $order->id;
+            $itemList = [];
+
+            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'order_items.receive_qty', 'order_items.batch_no', 'order_items.exp_date')
+            ->where('order_items.order_id', $order_id)
+            ->where('order_items.is_received', 1)
+            ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->get();
+
+            foreach($orderItems as $item):
+                $item_name = $item->brand_name . ' ' .$item->strength;
+                $itemList[] = array('medicine' => $item_name , 'receive_qty' => $item->receive_qty, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
+            endforeach;
+
+            $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
+        endforeach;
+
         return response()->json(array(
-            'total' => 'total',
-            'page_no' => '$pageNo',
-            'limit' => '$limit',
-            'data' => '$orders',
+            'data' => $data,
+            'status' => 'Successful',
+            'message' => 'Inventory Purchase items list'
         ));
+
+
+        // return response()->json(array(
+        //     'total' => 'total',
+        //     'page_no' => '$pageNo',
+        //     'limit' => '$limit',
+        //     'data' => '$orders',
+        // ));
     }
 
     public function purchaseListFilter(Request $request){
