@@ -469,11 +469,15 @@ class SaleController extends Controller
         if (!empty($data['customer_mobile'])) {
             $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
         }
-        if (!empty($data['sale_date'])) {
-            $dateRange = explode(',',$data['sale_date']);
-            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
-            $where = array_merge(array([DB::raw('DATE(created_at)'), '>=', $dateRange[0]]), $where);
-            $where = array_merge(array([DB::raw('DATE(created_at)'), '<=', $dateRange[1]]), $where);
+        if (!empty($query['sale_date'])) {
+            $dateRange = explode(',',$query['sale_date']);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+        }else{
+          $today = date('Y-m-d');
+          $lastMonth = date("Y-m-d",strtotime("-1 month"));
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
         }
         $query = Sale::where($where);
         $total = $query->count();
@@ -585,7 +589,7 @@ class SaleController extends Controller
                 'invoice' => $aItem->invoice,
                 'sale_date' => $aItem->sale_date,
                 'sales_man' => $aItem->name,
-                'customer' => ['name'=>$aItem->name,'mobile'=>$aItem->user_mobile],
+                'customer' => ['name'=>$aItem->customer_name,'mobile'=>$aItem->customer_mobile],
                 'sale_amount' => $aItem->sale_amount,
                 'sale_discount' => $aItem->sale_discount,
                 'sale_due' => $aItem->sale_due,
