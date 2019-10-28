@@ -627,7 +627,6 @@ class HomeController extends Controller
         $pharmacy_branch_id = $user->pharmacy_branch_id;
 
         $userList = User::select('id', 'name', 'email')->where('pharmacy_id', $pharmacy_id)->where('pharmacy_branch_id', $pharmacy_branch_id)
-        //->where('id', '!=', $user->id)
         ->get();
 
         return response()->json(array(
