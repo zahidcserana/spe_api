@@ -29,6 +29,7 @@ class SaleItem extends Model
                 'unit_price' => $cartItem->unit_price,
                 'unit_type' => $cartItem->unit_type,
                 'sub_total' => $cartItem->sub_total,
+                'tp' => $cartItem->tp,
                 // 'total_payble_amount' => $cartItem->total_payble_amount,
                 'discount' => $cartItem->discount ?? 0,
                 'product_type' => $cartItem->product_type,

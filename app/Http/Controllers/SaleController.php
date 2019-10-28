@@ -169,7 +169,7 @@ class SaleController extends Controller
             return response()->json(['success'=>true, "file_name" => $picture]);
       } else
       {
-            return response()->json(["message" => "Select image first."]);
+          return response()->json(["message" => "Select image first."]);
       }
     }
 
@@ -469,8 +469,11 @@ class SaleController extends Controller
         if (!empty($data['customer_mobile'])) {
             $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
         }
-        if (!empty($query['sale_date'])) {
-            $dateRange = explode(',',$query['sale_date']);
+        if (!empty($data['due_amount'])) {
+            $where = array_merge(array(['sales.total_due_amount', '>=', $data['due_amount']]), $where);
+        }
+        if (!empty($data['sale_date'])) {
+            $dateRange = explode(',',$data['sale_date']);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
         }else{
@@ -483,25 +486,41 @@ class SaleController extends Controller
         $total = $query->count();
         $orders = $query
             ->orderBy('sales.id', 'desc')
-            // ->offset($offset)
-            // ->limit($limit)
             ->get();
         $orderData = array();
+        $sum_sale_amount = 0;
+        $sum_advance_amount = 0;
+        $sum_sale_due = 0;
+
         foreach ($orders as $order) {
+            $due = $order->due_log ? json_decode($order->due_log ,true) : '';
             $aData = array();
             $aData['id'] = $order->id;
             $aData['customer_name'] = $order->customer_name;
+            $aData['status'] = $order->status;
             $aData['customer_mobile'] = $order->customer_mobile;
             $aData['invoice'] = $order->invoice;
-            $aData['total_payble_amount'] = $order->total_payble_amount;
-            $aData['total_due_amount'] = $order->total_due_amount;
+            $aData['discount'] = $order->discount;
+            $aData['sub_total'] = $order->sub_total;
+            $sum_sale_amount += $aData['total_payble_amount'] = $order->total_payble_amount;
+            $sum_advance_amount += $aData['total_advance_amount'] = $order->total_advance_amount;
+            $sum_sale_due += $aData['total_due_amount'] = $order->total_due_amount;
             $aData['created_at'] = date("Y-m-d H:i:s", strtotime($order->created_at));
-            $aData['image'] = $order->file_name ?? '';
+            $aData['due_payment_date'] = $due ? end($due)['updated_at'] : '';
             $orderData[] = $aData;
         }
+
+        $sammary = array(
+          'sum_sale_amount' => $sum_sale_amount,
+          'total_advance_amount' => $sum_advance_amount,
+          'sum_sale_due' => $sum_sale_due,
+        );
+
         $data = array(
             'data' => $orderData,
+            'summary' => $sammary,
         );
+
         return response()->json($data);
     }
 
@@ -520,11 +539,11 @@ class SaleController extends Controller
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
         }
         if (!empty($query['sales_man'])) {
-            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man'] . '%']), $where);
+            $where = array_merge(array(['users.id', $query['sales_man']]), $where);
         }
-        if (!empty($query['user_id'])) {
-            $where = array_merge(array(['users.id', $query['user_id']]), $where);
-        }
+        // if (!empty($query['user_id'])) {
+        //     $where = array_merge(array(['users.id', $query['user_id']]), $where);
+        // }
         if (!empty($query['sale_date'])) {
             $dateRange = explode(',',$query['sale_date']);
             // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
@@ -536,8 +555,8 @@ class SaleController extends Controller
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
         }
-        if (!empty($query['company_id'])) {
-          $where = array_merge(array(['sale_items.company_id', $query['company_id']]), $where);
+        if (!empty($query['company'])) {
+          $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
         }
         if (!empty($query['product_id'])) {
           $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
@@ -554,15 +573,17 @@ class SaleController extends Controller
 
         $query = Sale::where($where)
             ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('medicine_companies', 'sale_items.company_id', '=', 'medicine_companies.id')
             ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
             ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
             ->join('users', 'sales.created_by', '=', 'users.id');
 
         $total = $query->count();
         $orders = $query
-            ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount','sales.total_due_amount as sale_due',
+            ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount',
+            'sales.total_due_amount as sale_due','sales.customer_name','sales.customer_mobile',
             'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.unit_price as mrp','sale_items.tp',
-            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type')
+            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type','medicine_companies.company_name as medicine_company')
             ->orderBy('sales.id', 'desc')
             ->get();
 
@@ -605,7 +626,7 @@ class SaleController extends Controller
             $profit = $aItem->sub_total - $sub_tp;
             $total_profit += $profit;
             $aData = array();
-            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'name'=>$aItem->brand_name, 'strength'=>$aItem->strength, 'medicine_type'=>$aItem->medicine_type];
+            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'company'=>$aItem->medicine_company, 'name'=>$aItem->brand_name, 'strength'=>$aItem->strength, 'type'=> substr($aItem->medicine_type, 0, 3)];
             $aData['quantity'] = $aItem->quantity;
             $aData['mrp'] = $aItem->mrp;
             $aData['tp'] = $aItem->tp;
@@ -632,7 +653,7 @@ class SaleController extends Controller
 
         $data = array(
             'data' => $array,
-            'sammary' => $sammary,
+            'summary' => $sammary,
         );
 
         return response()->json($data);
