@@ -768,9 +768,11 @@ class OrderController extends Controller
             $order_id = $order->id;
             $itemList = [];
 
-            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
+            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'medicine_types.name as medicine_type', 'medicine_companies.company_name', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
             ->where('order_items.order_id', $order_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
             ->get();
 
             foreach($orderItems as $item):
@@ -780,7 +782,7 @@ class OrderController extends Controller
 
                 $item_name = $item->brand_name . ' ' .$item->strength;
 
-                $itemList[] = array('medicine' => $item_name , 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
+                $itemList[] = array('medicine' => $item_name, 'medicine_type' => $item->medicine_type, 'company_name' => $item->company_name, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
             endforeach;
 
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
@@ -808,6 +810,7 @@ class OrderController extends Controller
         $company_id = 0;
         if(sizeof($company_details)){
             $company_id = $company_details[0]->id;
+            $company_orders = OrderItem::distinct('order_id')->where('company_id', $company_id)->pluck('order_id');
         }
 
         $data = [];
@@ -820,10 +823,10 @@ class OrderController extends Controller
         })
         ->when($sales_man, function ($query, $sales_man) {
             return $query->where('orders.created_by', $sales_man);
-        })
-        ->when($company_id, function ($query, $company_id) {
-            return $query->where('orders.company_id', $company_id);
         });
+        if(sizeof($company_orders)){
+            $orders = $orders->whereIn('orders.id', $company_orders);
+        }
         if ($start_date) {
             $orders = $orders->whereBetween('orders.purchase_date', [$start_date, $end_date]);
         }
@@ -834,9 +837,11 @@ class OrderController extends Controller
             $order_id = $order->id;
             $itemList = [];
 
-            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
+            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'medicine_types.name as medicine_type', 'medicine_companies.company_name', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
             ->where('order_items.order_id', $order_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
             ->get();
 
             foreach($orderItems as $item):
@@ -846,7 +851,7 @@ class OrderController extends Controller
 
                 $item_name = $item->brand_name . ' ' .$item->strength;
 
-                $itemList[] = array('medicine' => $item_name , 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
+                $itemList[] = array('medicine' => $item_name , 'company_name' => $item->company_name, 'medicine_type' => $item->medicine_type, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
             endforeach;
 
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);

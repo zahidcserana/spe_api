@@ -585,26 +585,39 @@ class HomeController extends Controller
         $user = $request->auth;
         $pharmacy_branch_id = $user->pharmacy_branch_id;
 
-        $lowStoclItems = Product::select('products.medicine_id', 'medicines.brand_name', 'products.exp_date')
-        ->where('products.quantity', '<',  100)
+        $lowStoclItems = Product::select('products.medicine_id', 'medicines.brand_name', 'products.exp_date', 'products.low_stock_qty', 'products.quantity')
         ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
         ->get();
 
         foreach ($lowStoclItems as $item):
-            $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'LOW_QTY')->get();
-            if(!sizeof($alreadyExist)){
-                $details = $item->brand_name. ', The stock quantity is bellow 100. Please update the stock!';
-                $insertNotification = new Notification();
-                $insertNotification->category = "LOW_QTY";
-                $insertNotification->details = $details;
-                $insertNotification->pharmacy_branch_id = $pharmacy_branch_id;
-                $insertNotification->medicine_id = $item->medicine_id;
-                $insertNotification->notification_date = date('Y-m-d');
-                $insertNotification->importance = 4;
-                $insertNotification->save();
+            if($item->low_stock_qty >= $item->quantity){
+                $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'LOW_QTY')->get();
+                if(!sizeof($alreadyExist)){
+                    $details = $item->brand_name. ', The stock quantity is bellow 100. Please update the stock!';
+                    $insertNotification = new Notification();
+                    $insertNotification->category = "LOW_QTY";
+                    $insertNotification->details = $details;
+                    $insertNotification->pharmacy_branch_id = $pharmacy_branch_id;
+                    $insertNotification->medicine_id = $item->medicine_id;
+                    $insertNotification->notification_date = date('Y-m-d');
+                    $insertNotification->importance = 4;
+                    $insertNotification->save();
+                }
             }
         endforeach;
+    }
 
+    public function getAllNotificationList(Request $request)
+    {
+        $notifications = Notification::select('notifications.id', 'notifications.category', 'notifications.details', 'notifications.notification_date', 'notifications.is_read', 'notifications.importance', 'medicines.brand_name')
+        ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
+        ->orderby('notifications.id', 'DESC')
+        ->get();
+
+        return response()->json(array(
+            'data' => $notifications,
+            'status' => 'Successful'
+        ));
     }
 
     public function getNotificationList(Request $request)
@@ -612,7 +625,7 @@ class HomeController extends Controller
         $notifications = Notification::select('notifications.id', 'notifications.category', 'notifications.details', 'notifications.notification_date', 'notifications.is_read', 'notifications.importance', 'medicines.brand_name')
         ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
         ->orderby('notifications.id', 'DESC')
-        //->take(10)
+        ->take(10)
         ->get();
 
         return response()->json(array(
