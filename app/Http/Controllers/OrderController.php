@@ -364,6 +364,10 @@ class OrderController extends Controller
 
             $UpdateOrder->total_due_amount = $UpdateOrder->total_due_amount - $new_pay_amount;
 
+            if(!$UpdateOrder->total_due_amount){
+                $UpdateOrder->payment_type = "PAID";
+            }
+
             // return response()->json(array(
             //     'data' => $new_pay_amount,
             //     'message' => "Purchase Due submited Successfull!"
@@ -621,6 +625,10 @@ class OrderController extends Controller
         $orderAdd->total_payble_amount  = $details['net_amount'] ? $details['net_amount'] : 0;
         $orderAdd->total_advance_amount = $details['advance'] ? $details['advance'] : 0;
         $orderAdd->total_due_amount     = $details['due'] ? $details['due'] : 0;
+        if($details['due']){
+            $orderAdd->payment_type     = "DUE";
+            $orderAdd->has_due          = 1;
+        }
         $orderAdd->status               = "ACCEPTED";
         $orderAdd->created_by           = $user->id;
         $orderAdd->pharmacy_branch_id   = $user->pharmacy_branch_id;
@@ -1504,7 +1512,7 @@ class OrderController extends Controller
     public function productList(Request $request){
         $user = $request->auth;
 
-        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
@@ -1516,6 +1524,21 @@ class OrderController extends Controller
             'data' => $inventory,
             'status' => 'Successful',
             'message' => 'Inventory List'
+        ));
+    }
+
+    public function lowStockQtyupdate(Request $request){
+        $id = $request->id;
+        $qty = $request->qty;
+
+        $UpdateProduct = Product::find($id);
+        $UpdateProduct->low_stock_qty = $qty;
+        $UpdateProduct->save();
+
+        return response()->json(array(
+            'data' => $qty,
+            'status' => 'Successful',
+            'message' => 'Update List'
         ));
     }
 

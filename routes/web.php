@@ -96,6 +96,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/save', ['uses' => 'OrderController@purchaseSave']);
                 $router->post('purchase/due/save', ['uses' => 'OrderController@purchaseDueSave']);
                 $router->post('purchase/item/details/update', ['uses' => 'OrderController@purchaseItemDetailsUpdate']);
+                $router->post('lowStockQty/update', ['uses' => 'OrderController@lowStockQtyupdate']);
                 $router->post('purchase/item/delete', ['uses' => 'OrderController@purchaseItemDetailsDelete']);
 
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
