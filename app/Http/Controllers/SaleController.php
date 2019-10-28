@@ -526,7 +526,7 @@ class SaleController extends Controller
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
         }
         if (!empty($query['sales_man'])) {
-            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man'] . '%']), $where);
+            $where = array_merge(array(['users.id', $query['sales_man']]), $where);
         }
         if (!empty($query['user_id'])) {
             $where = array_merge(array(['users.id', $query['user_id']]), $where);
@@ -542,8 +542,11 @@ class SaleController extends Controller
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
         }
-        if (!empty($query['company_id'])) {
-          $where = array_merge(array(['sale_items.company_id', $query['company_id']]), $where);
+        if (!empty($query['company'])) {
+          $company = DB::table('medicine_companies')->where('company_name', 'LIKE', '%' . $query['company'] . '%')->first();
+          if($company) {
+            $where = array_merge(array(['sale_items.company_id', $company->id]), $where);
+          }
         }
         if (!empty($query['product_id'])) {
           $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
