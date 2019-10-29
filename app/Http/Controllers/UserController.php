@@ -7,6 +7,7 @@ use App\Models\User;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -19,7 +20,7 @@ class UserController extends Controller
 
     public function create(Request $request)
     {
-      $user = $request->auth;
+        $user = $request->auth;
         $this->validate($request, [
             'name' => 'required',
             'email' => 'unique:users,email',
@@ -32,6 +33,18 @@ class UserController extends Controller
 
         $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
         return response()->json(['success' => true, 'data' => $users]);
+    }
+
+    public function adminCheck(Request $request) {
+      $status = false;
+      if(!$request->email || !$request->password) {
+        return response()->json(['status' => $status ], 200);
+      }
+      $user = User::where('email', $request->email)->first();
+      if ($user && Hash::check($request->password, $user->password)) {
+        $status = true;
+      }
+      return response()->json(['status' => $status ], 200);
     }
 
     public function sendPushNotification($title, $messageBody, $message, $imageUrl, $urlNeedsToOpen, $sendType)
