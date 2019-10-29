@@ -22,6 +22,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('users', ['uses' => 'UserController@create']);
 
                 /** Users */
+                $router->post('users/admin/check', ['uses' => 'UserController@adminCheck']);
                 $router->post('users/{id}', ['uses' => 'UserController@update']);
 
                 /** MRs */
