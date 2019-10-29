@@ -105,6 +105,11 @@ $router->group(['prefix' => 'api'],
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
                 $router->get('master/purchase/list', ['uses' => 'OrderController@masterPurchaseList']);
                 $router->post('master/purchase/list/filter', ['uses' => 'OrderController@masterPurchaseListFilter']);
+
+                //master/purchase/due/list  
+                $router->get('master/purchase/due/list', ['uses' => 'OrderController@masterPurchaseDueList']);
+                $router->post('master/purchase/due/list/filter', ['uses' => 'OrderController@masterPurchaseDueListFilter']);
+
                 $router->post('purchase/item/filter', ['uses' => 'OrderController@purchaseListFilter']);
                 $router->get('purchase/due/list', ['uses' => 'OrderController@purchaseDueList']);
 
