@@ -1730,11 +1730,55 @@ class OrderController extends Controller
         $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
         $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
 
-        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'medicine_companies.company_name')
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->when($company, function ($query, $company) {
                 return $query->where('products.company_id', $company);
+            })
+            ->when($medicine_id, function ($query, $medicine_id) {
+                return $query->where('products.medicine_id', $medicine_id);
+            })
+            ->when($quantity, function ($query, $quantity) {
+                return $query->where('products.quantity', '<', $quantity);
+            })
+            ->when($medicine_type_id, function ($query, $medicine_type_id) {
+                return $query->where('medicines.medicine_type_id', $medicine_type_id);
+            })
+            ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
+            ->get();
+
+        return response()->json(array(
+            'data' => $inventory,
+            'status' => 'Successful',
+            'message' => 'Inventory List'
+        ));
+    }
+
+    public function masterInventoryListFilter(Request $request){
+        $user = $request->auth;
+
+        $filter = $request->query('filter');
+        $decode_filter = json_decode($filter, true);
+
+        $company = $decode_filter['company'];
+        $company_details = MedicineCompany::where('company_name', $company)->get();
+        $company_id = 0;
+        if(sizeof($company_details)){
+            $company_id = $company_details[0]->id;
+        }
+
+        $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
+        $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
+        $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
+
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
+            ->orderBy('medicines.brand_name', 'ASC')
+            ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->when($company_id, function ($query, $company_id) {
+                return $query->where('products.company_id', $company_id);
             })
             ->when($medicine_id, function ($query, $medicine_id) {
                 return $query->where('products.medicine_id', $medicine_id);
