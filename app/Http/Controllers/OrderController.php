@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Cart;
 use App\Models\Sale;
-use App\Models\OrderDue;
 use App\Models\SaleItem;
 use App\Models\CartItem;
 use App\Models\Medicine;
@@ -16,6 +15,7 @@ use App\Models\MedicineType;
 use App\Models\MedicineCompany;
 use App\Models\InventoryDetail;
 use App\Models\Order;
+use App\Models\OrderDue;
 use App\Models\OrderItem;
 use Barryvdh\DomPDF\PDF;
 use Illuminate\Http\Request;
@@ -808,6 +808,7 @@ class OrderController extends Controller
 
         $company_details = MedicineCompany::where('company_name', $company)->get();
         $company_id = 0;
+        $company_orders = [];
         if(sizeof($company_details)){
             $company_id = $company_details[0]->id;
             $company_orders = OrderItem::distinct('order_id')->where('company_id', $company_id)->pluck('order_id');
@@ -855,6 +856,134 @@ class OrderController extends Controller
             endforeach;
 
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
+        endforeach;
+
+        return response()->json(array(
+            'data' => $data,
+            'status' => 'Successful',
+            'message' => 'Purchase list'
+        ));
+    }
+
+    public function masterPurchaseDueList(Request $request){
+        $data = [];
+        $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.payment_type', 'orders.discount', 'orders.total_amount', 'orders.total_payble_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name', 'users.name as created_by')
+        ->where('orders.status', 'ACCEPTED')
+        ->where('orders.has_due', '=', 1)
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id')
+        ->leftjoin('users', 'users.id', '=', 'orders.created_by')
+        ->orderBy('id', 'DESC')
+        ->get();
+
+        foreach($orders as $order):
+            $order_id = $order->id;
+            $itemList = [];
+
+            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'medicine_types.name as medicine_type', 'medicine_companies.company_name', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
+            ->where('order_items.order_id', $order_id)
+            ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
+            ->get();
+
+            foreach($orderItems as $item):
+                $trade_price = $item->trade_price;
+                $box_vat = $item->box_vat;
+                $tp_with_vat = $trade_price + $box_vat;
+
+                $item_name = $item->brand_name . ' ' .$item->strength;
+
+                $itemList[] = array('medicine' => $item_name, 'medicine_type' => $item->medicine_type, 'company_name' => $item->company_name, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
+            endforeach;
+
+            $dueDetails = OrderDue::where('order_id', $order_id)->orderBy('id', 'DESC')->take(1)->get();
+            $due_date = NULL;
+            if(sizeof($dueDetails)){
+                $due_date = date("Y-m-d", strtotime($dueDetails[0]->created_at));
+            }
+
+            $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'due_date' => $due_date, 'due_status' => $order->payment_type, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
+        endforeach;
+
+        return response()->json(array(
+            'data' => $data,
+            'status' => 'Successful',
+            'message' => 'Purchase list'
+        ));
+    }
+
+    public function masterPurchaseDueListFilter(Request $request){
+
+        $details = $request->details;
+
+        $invoice = $details['invoice'] ? $details['invoice'] : 0;
+        $start_date = $details['start_date'];
+        $end_date = $details['end_date'];
+        $company = $details['company'];
+        $sales_man = $details['sales_man'] ? $details['sales_man'] : 0;
+        $product = $details['product'];
+        $status = $details['status'];
+
+        $company_details = MedicineCompany::where('company_name', $company)->get();
+        $company_id = 0;
+        $company_orders = [];
+        if(sizeof($company_details)){
+            $company_id = $company_details[0]->id;
+            $company_orders = OrderItem::distinct('order_id')->where('company_id', $company_id)->pluck('order_id');
+        }
+
+        $data = [];
+        $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.payment_type', 'orders.discount', 'orders.total_amount', 'orders.total_payble_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name', 'users.name as created_by')
+        ->where('orders.status', 'ACCEPTED')
+        ->where('orders.has_due', '=', 1)
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id')
+        ->leftjoin('users', 'users.id', '=', 'orders.created_by')
+        ->when($invoice, function ($query, $invoice) {
+            return $query->where('orders.invoice', $invoice);
+        })
+        ->when($sales_man, function ($query, $sales_man) {
+            return $query->where('orders.created_by', $sales_man);
+        })
+        ->when($status, function ($query, $status) {
+            return $query->where('orders.payment_type', $status);
+        });
+        if(sizeof($company_orders)){
+            $orders = $orders->whereIn('orders.id', $company_orders);
+        }
+        if ($start_date) {
+            $orders = $orders->whereBetween('orders.purchase_date', [$start_date, $end_date]);
+        }
+        $orders = $orders->orderBy('id', 'DESC');
+        $orders = $orders->get();
+
+        foreach($orders as $order):
+            $order_id = $order->id;
+            $itemList = [];
+
+            $orderItems = OrderItem::select('medicines.brand_name', 'medicines.strength', 'medicine_types.name as medicine_type', 'medicine_companies.company_name', 'order_items.pieces_per_box', 'order_items.trade_price', 'order_items.unit_price', 'order_items.box_vat', 'order_items.mrp', 'order_items.quantity', 'order_items.batch_no', 'order_items.exp_date')
+            ->where('order_items.order_id', $order_id)
+            ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
+            ->get();
+
+            $dueDetails = OrderDue::where('order_id', $order_id)->orderBy('id', 'DESC')->take(1)->get();
+            $due_date = NULL;
+            if(sizeof($dueDetails)){
+                $due_date = date("Y-m-d", strtotime($dueDetails[0]->created_at));
+            }
+
+            foreach($orderItems as $item):
+                $trade_price = $item->trade_price;
+                $box_vat = $item->box_vat;
+                $tp_with_vat = $trade_price + $box_vat;
+
+                $item_name = $item->brand_name . ' ' .$item->strength;
+
+                $itemList[] = array('medicine' => $item_name , 'company_name' => $item->company_name, 'medicine_type' => $item->medicine_type, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
+            endforeach;
+
+            $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'due_date' => $due_date, 'due_status' => $order->payment_type, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
         endforeach;
 
         return response()->json(array(
