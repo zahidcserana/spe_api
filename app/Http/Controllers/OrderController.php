@@ -342,7 +342,8 @@ class OrderController extends Controller
     public function previousPurchaseDetails(Request $request){
         //$request
         if($request->medicine_id){
-            $itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
+            //$itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
+            $itemDetails = Medicine::select('pcs_per_box as pieces_per_box', 'tp_per_box as trade_price', 'vat_per_box as box_vat', 'mrp_per_box as mrp')->where('id', $request->medicine_id)->first();
         }
         return response()->json(array(
             'data' => $itemDetails,
@@ -673,6 +674,15 @@ class OrderController extends Controller
             $itemSave->pieces_per_box   = $item['piece_per_box'];
             $itemSave->save();
 
+            if($item['update_price']){
+                $UpdateMedicine = Medicine::find($medicine_id);
+                $UpdateMedicine->pcs_per_box = $item['piece_per_box'] ? $item['piece_per_box'] :0;
+                $UpdateMedicine->tp_per_box  = $item['box_trade_price'] ? $item['box_trade_price'] : 0;
+                $UpdateMedicine->vat_per_box = $item['box_vat'] ? $item['box_vat'] : 0;
+                $UpdateMedicine->mrp_per_box = $item['box_mrp'] ? $item['box_mrp'] : 0;
+                $UpdateMedicine->save();
+            }
+            
             $per_item_vat = ($item['box_trade_price'] + $item['box_vat'])/$item['piece_per_box'];
 
             $isProcuctExist = Product::where('medicine_id', $medicine_id)->get();
@@ -682,8 +692,10 @@ class OrderController extends Controller
 
                 $UpdateProduct = Product::find($procuctId);
                 $UpdateProduct->quantity            = $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
-                $UpdateProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
-                $UpdateProduct->tp                  = $per_item_vat ? $per_item_vat : 0.00;
+                if($item['update_price']){
+                    $UpdateProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
+                    $UpdateProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
+                }
                 $UpdateProduct->batch_no            = $item['batch_no'];
                 $UpdateProduct->company_id          = $company_id ? $company_id : 0;
                 $UpdateProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
@@ -694,8 +706,10 @@ class OrderController extends Controller
                 $InsertProduct = new Product();
                 $InsertProduct->medicine_id         = $medicine_id;
                 $InsertProduct->quantity            = $item['quantity'] * $item['piece_per_box'];
-                $InsertProduct->mrp                 = $item['box_mrp']/$item['piece_per_box'];
-                $InsertProduct->tp                  = $per_item_vat ? $per_item_vat : 0.00;
+                if($item['update_price']){
+                    $InsertProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
+                    $InsertProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
+                }
                 $InsertProduct->batch_no            = $item['batch_no'];
                 $InsertProduct->company_id          = $company_id ? $company_id : 0;
                 $InsertProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
