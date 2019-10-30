@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\OrderItem;
 use App\Models\Sale;
+use App\Models\Beximco;
+use App\Models\Medicine;
 use App\Models\Product;
 use App\Models\SaleItem;
 use App\Models\Notification;
@@ -669,6 +671,29 @@ class HomeController extends Controller
         return response()->json(array(
             'data' => $userList,
             'status' => 'List Successful!'
+        ));
+    }
+
+    public function updateMedicineDetails(){
+        $medicineDetails = Beximco::all();
+        foreach ($medicineDetails as $medicine):
+            $med_id = $medicine->med_id;
+            $med_TP = $medicine->med_TP;
+            $med_VAT = $medicine->med_VAT;
+            $med_MRP = $medicine->med_MRP;
+            $med_qty_per_box = $medicine->med_qty_per_box;
+
+            $UpdateMedicine = Medicine::find($med_id);
+            if(sizeof($UpdateMedicine)){
+                $UpdateMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box :0;
+                $UpdateMedicine->tp_per_box  = $med_TP ? $med_TP : 0;
+                $UpdateMedicine->vat_per_box = $med_VAT ? $med_VAT : 0;
+                $UpdateMedicine->mrp_per_box = $med_MRP ? $med_MRP : 0;
+                $UpdateMedicine->save();
+            }
+        endforeach;
+        return response()->json(array(
+            'status' => 'Successful'
         ));
     }
 }

@@ -778,6 +778,10 @@ class OrderController extends Controller
         ->orderBy('id', 'DESC')
         ->get();
 
+        $total_amount = 0;
+        $total_discount = 0;
+        $total_due = 0;
+
         foreach($orders as $order):
             $order_id = $order->id;
             $itemList = [];
@@ -799,13 +803,20 @@ class OrderController extends Controller
                 $itemList[] = array('medicine' => $item_name, 'medicine_type' => $item->medicine_type, 'company_name' => $item->company_name, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
             endforeach;
 
+            $total_amount = $total_amount + $order->total_amount;
+            $total_discount = $total_discount + $order->discount;
+            $total_due = $total_due + $order->total_due_amount;
+
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
         endforeach;
+
+        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'total_due' => $total_due);
 
         return response()->json(array(
             'data' => $data,
             'status' => 'Successful',
-            'message' => 'Purchase list'
+            'message' => 'Purchase list',
+            'summary' => $summary
         ));
     }
 
@@ -848,6 +859,10 @@ class OrderController extends Controller
         $orders = $orders->orderBy('id', 'DESC');
         $orders = $orders->get();
 
+        $total_amount = 0;
+        $total_discount = 0;
+        $total_due = 0;
+
         foreach($orders as $order):
             $order_id = $order->id;
             $itemList = [];
@@ -869,13 +884,20 @@ class OrderController extends Controller
                 $itemList[] = array('medicine' => $item_name , 'company_name' => $item->company_name, 'medicine_type' => $item->medicine_type, 'unit_price_with_vat' => $item->unit_price, 'tp_with_vat' => $tp_with_vat, 'quantity' => $item->quantity, 'batch_no' => $item->batch_no, 'exp_date' => $item->exp_date);
             endforeach;
 
+            $total_amount = $total_amount + $order->total_amount;
+            $total_discount = $total_discount + $order->discount;
+            $total_due = $total_due + $order->total_due_amount;
+
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
         endforeach;
+
+        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'total_due' => $total_due);
 
         return response()->json(array(
             'data' => $data,
             'status' => 'Successful',
-            'message' => 'Purchase list'
+            'message' => 'Purchase list',
+            'summary' => $summary
         ));
     }
 
