@@ -35,6 +35,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('sale-data-sync', ['uses' => 'HomeController@saleDataSync']);
                 /* for mr light */
                 $router->get('summary', ['uses' => 'HomeController@summary']);
+                $router->get('summary/sale-purchase', ['uses' => 'HomeController@salePurchasSummary']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
@@ -106,7 +107,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('master/purchase/list', ['uses' => 'OrderController@masterPurchaseList']);
                 $router->post('master/purchase/list/filter', ['uses' => 'OrderController@masterPurchaseListFilter']);
 
-                //master/purchase/due/list  
+                //master/purchase/due/list
                 $router->get('master/purchase/due/list', ['uses' => 'OrderController@masterPurchaseDueList']);
                 $router->post('master/purchase/due/list/filter', ['uses' => 'OrderController@masterPurchaseDueListFilter']);
 
@@ -147,7 +148,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
 
-                //inventory/list 
+                //inventory/list
                 $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);
                 $router->get('master/inventory/listFilter', ['uses' => 'OrderController@masterInventoryListFilter']);
 

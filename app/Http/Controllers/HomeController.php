@@ -39,6 +39,30 @@ class HomeController extends Controller
         return response()->json($data);
     }
 
+    public function salePurchasSummary(Request $request) {
+      $user = $request->auth;
+      $sales = DB::table('sales')
+      ->select('medicine_companies.company_name as company', DB::raw('SUM(sale_items.sub_total) as amount'))
+      ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+      ->join('medicine_companies', 'sale_items.company_id', '=', 'medicine_companies.id')
+      ->where('sales.pharmacy_branch_id', $user->pharmacy_branch_id)
+      ->groupBy('sale_items.company_id')
+      ->get();
+
+      $orders = DB::table('orders')
+      ->select('medicine_companies.company_name as company', DB::raw('SUM(order_items.sub_total) as amount'))
+      ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+      ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
+      ->where('orders.pharmacy_branch_id', $user->pharmacy_branch_id)
+      ->groupBy('order_items.company_id')
+      ->get();
+
+      $data['sale'] = $sales;
+      $data['purchase'] = $orders;
+
+      return response()->json($data);
+    }
+
     public function statusSync($statusData)
     {
         foreach ($statusData as $item) {

@@ -538,6 +538,10 @@ class SaleController extends Controller
         if (!empty($query['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
         }
+
+        if (!empty($query['sales_man_name'])) {
+            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man_name'] . '%']), $where);
+        }
         if (!empty($query['sales_man'])) {
             $where = array_merge(array(['users.id', $query['sales_man']]), $where);
         }
