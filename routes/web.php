@@ -187,3 +187,4 @@ $router->get('test', ['uses' => 'UserController@test']);
 /** Insert Consumer products */
 $router->get('insertconsumerproducts', ['uses' => 'OrderController@insertconsumerproducts']);
 $router->get('purchaseReportToExcels',  ['uses' => 'OrderController@purchaseReportToExcels']);
+$router->get('updateMedicineDetails',  ['uses' => 'HomeController@updateMedicineDetails']);
