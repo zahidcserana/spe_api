@@ -159,6 +159,7 @@ class Sale extends Model
         $createdBy = DB::table('users')->where('id', $order->created_by)->first();
         $data['created_by'] = $createdBy->name ?? '';
         $data['user_email'] = $createdBy->email ?? '';
+        $data['salesman_mobile'] = $createdBy->user_mobile ?? '';
 
         $pharmacy = $order->pharmacy;
         $data['pharmacy'] = $pharmacy->pharmacy_shop_name;

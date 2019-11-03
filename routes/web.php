@@ -36,9 +36,12 @@ $router->group(['prefix' => 'api'],
                 /* for mr light */
                 $router->get('summary', ['uses' => 'HomeController@summary']);
                 $router->get('summary/sale-purchase', ['uses' => 'HomeController@salePurchasSummary']);
-                $router->post('subscription', ['uses' => 'HomeController@subscription']);
-                $router->get('subscription-plan', ['uses' => 'HomeController@subscriptionPlan']);
-                $router->post('subscription-count', ['uses' => 'HomeController@subscriptionCount']);
+
+                /** Subscription Plan */
+                $router->post('subscription', ['uses' => 'SubscriptionController@subscription']);
+                $router->get('subscription-plan', ['uses' => 'SubscriptionController@subscriptionPlan']);
+                $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
+                $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
