@@ -1754,6 +1754,12 @@ class OrderController extends Controller
         return response()->json($data);
     }
 
+    public function typeList(Request $request)
+    {
+        $typeList = MedicineType::select('id', 'name')->get();
+        return response()->json($typeList);
+    }
+
     public function inventoryListFilter(Request $request){
 
         $user = $request->auth;
