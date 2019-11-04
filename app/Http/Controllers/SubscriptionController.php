@@ -33,7 +33,7 @@ class SubscriptionController extends Controller
         $msg = 'Already used this coupon.';
       }else{
         $status = true;
-        DB::table('subscriptions')->where('id',$coupon->id)->update(['status'=>'USED']);
+        DB::table('subscriptions')->where('id',$coupon->id)->update(['status'=>'USED', 'apply_date'=>date('Y-m-d H:i:s')]);
         $branch = DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->first();
         if($branch) {
           if($coupon->coupon_type == 'Monthly') {
