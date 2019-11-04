@@ -42,6 +42,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('subscription-plan', ['uses' => 'SubscriptionController@subscriptionPlan']);
                 $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
                 $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
+                $router->get('subscription-data', ['uses' => 'SubscriptionController@getSubscriptions']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);

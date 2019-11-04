@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Hash;
 
 class SubscriptionController extends Controller
 {
+  private $user;
+  public function __construct(Request $request) {
+    $this->user = $request->auth;
+  }
+
   public function subscription(Request $request) {
     $user = $request->auth;
 
@@ -36,9 +41,13 @@ class SubscriptionController extends Controller
         DB::table('subscriptions')->where('id',$coupon->id)->update(['status'=>'USED', 'apply_date'=>date('Y-m-d H:i:s')]);
         $branch = DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->first();
         if($branch) {
-          if($coupon->coupon_type == 'Monthly') {
+          if($coupon->coupon_type == '1MONTH') {
             $subscription_period = $branch->subscription_period + 30;
-          }else if($coupon->coupon_type == 'Yearly') {
+          } else if($coupon->coupon_type == '3MONTH') {
+            $subscription_period = $branch->subscription_period + 30 * 3;
+          } else if($coupon->coupon_type == '6MONTH') {
+            $subscription_period = $branch->subscription_period + 30 * 6;
+          } else if($coupon->coupon_type == '1YEAR') {
             $subscription_period = $branch->subscription_period + 360;
           }
           DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update(['subscription_period'=>$subscription_period]);
@@ -82,11 +91,21 @@ class SubscriptionController extends Controller
         'pharmacy_id' => $pharmacy_id ?? 0,
         'pharmacy_branch_id' => $pharmacy_branch_id ?? 0,
         'coupon_code' => $value,
-        'coupon_type' => 'Monthly',
+        'coupon_type' => '1MONTH',
       );
       DB::table('subscriptions')->insert($input);
     }
     return response()->json($coupon);
+  }
+
+  public function getSubscriptions() {
+    $coupons = DB::table('subscriptions')->get();
+    $data['coupons'] = $coupons;
+    $subscription = DB::table('pharmacy_branches')->where('id', $this->user->pharmacy_branch_id)->first();
+    $data['subscription_period'] = $subscription->subscription_period;
+    $data['subscription_count'] = $subscription->subscription_count;
+
+    return response()->json(['status'=>false, 'data'=> $data]);
   }
 
 }
