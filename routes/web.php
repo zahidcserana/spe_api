@@ -151,6 +151,7 @@ $router->group(['prefix' => 'api'],
                 //inventory/list
                 $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);
                 $router->get('master/inventory/listFilter', ['uses' => 'OrderController@masterInventoryListFilter']);
+                $router->post('master/inventory/list/filter', ['uses' => 'OrderController@masterInventoryFilterList']);
 
                 /** Notification List */
                 $router->get('notification/list', ['uses' => 'HomeController@getNotificationList']);
