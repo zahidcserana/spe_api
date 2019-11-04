@@ -37,6 +37,12 @@ $router->group(['prefix' => 'api'],
                 $router->get('summary', ['uses' => 'HomeController@summary']);
                 $router->get('summary/sale-purchase', ['uses' => 'HomeController@salePurchasSummary']);
 
+                /** Subscription Plan */
+                $router->post('subscription', ['uses' => 'SubscriptionController@subscription']);
+                $router->get('subscription-plan', ['uses' => 'SubscriptionController@subscriptionPlan']);
+                $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
+                $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
+
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
                 $router->get('dashboard/statistics', ['uses' => 'DashboardController@getStatistics']);
