@@ -43,6 +43,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
                 $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
                 $router->get('subscription-data', ['uses' => 'SubscriptionController@getSubscriptions']);
+                $router->post('subscription-response', ['uses' => 'SubscriptionController@subscriptionResponse']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
@@ -150,7 +151,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('inventory/damages', ['uses' => 'OrderController@receiveDamageItem']);
                 $router->get('reports/inventory/damagesList', ['uses' => 'OrderController@damagesList']);
 
-                //Products 
+                //Products
                 $router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
