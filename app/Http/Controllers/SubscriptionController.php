@@ -61,7 +61,7 @@ class SubscriptionController extends Controller
     ->where('coupon_type', $data['coupon_type'])
     ->where('coupon_code', $data['coupon_code'])
     ->first();
-    $subscription_period = '';
+    $subscription_period = 0;
     if($coupon) {
       if($coupon->status == 'USED') {
         $msg = 'Already used this coupon.';
@@ -89,28 +89,7 @@ class SubscriptionController extends Controller
     }
     return response()->json(['status'=>$status, 'message'=>$msg, 'data'=>['subscription_period' => $subscription_period]]);
   }
-  public function __subscriptionRequest($data) {
-    $ch = curl_init();
 
-    curl_setopt($ch, CURLOPT_URL,"http://localhost/spe_api/api/subscription-response");
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS,json_encode($data));
-
-    // In real life you should use something like:
-    // curl_setopt($ch, CURLOPT_POSTFIELDS,
-    //          http_build_query(array('postvar1' => 'value1')));
-
-    // Receive server response ...
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $server_output = curl_exec($ch);
-
-    curl_close ($ch);
-    // dd($server_output);
-
-    // Further processing ...
-    if ($server_output == "OK") { dd('ok'); } else { dd('not'); }
-  }
   public function subscriptionRequest($data) {
     $curl = curl_init();
 
