@@ -15,6 +15,7 @@ $router->group(['prefix' => 'api'],
         $router->post('companies/all', ['uses' => 'HomeController@CompanyList']);
         $router->post('users/mr/add', ['uses' => 'MrController@add']);
         $router->post('users/pharmacy-mr', ['uses' => 'MrController@addMR']);
+        $router->post('subscription-response', ['uses' => 'SubscriptionController@subscriptionResponse']);
 
         $router->group(['middleware' => 'jwt.auth'],
             function () use ($router) {
@@ -43,7 +44,6 @@ $router->group(['prefix' => 'api'],
                 $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
                 $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
                 $router->get('subscription-data', ['uses' => 'SubscriptionController@getSubscriptions']);
-                $router->post('subscription-response', ['uses' => 'SubscriptionController@subscriptionResponse']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
