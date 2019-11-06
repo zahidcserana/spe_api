@@ -19,10 +19,10 @@ CREATE TABLE `subscriptions` (
  `pharmacy_id` int(11) NOT NULL,
  `pharmacy_branch_id` int(11) NOT NULL,
  `coupon_code` varchar(255) NOT NULL,
- `coupon_type` enum('Monthly','Yearly') NOT NULL,
- `apply_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ `coupon_type` enum('1MONTH',' 3MONTH','6MONTH','1YEAR') NOT NULL DEFAULT '1MONTH',
+ `apply_date` datetime DEFAULT NULL,
  `status` enum('ACTIVE','INACTIVE','USED') NOT NULL DEFAULT 'ACTIVE',
  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4;

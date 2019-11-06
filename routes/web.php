@@ -15,6 +15,7 @@ $router->group(['prefix' => 'api'],
         $router->post('companies/all', ['uses' => 'HomeController@CompanyList']);
         $router->post('users/mr/add', ['uses' => 'MrController@add']);
         $router->post('users/pharmacy-mr', ['uses' => 'MrController@addMR']);
+        $router->post('subscription-response', ['uses' => 'SubscriptionController@subscriptionResponse']);
 
         $router->group(['middleware' => 'jwt.auth'],
             function () use ($router) {
@@ -42,6 +43,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('subscription-plan', ['uses' => 'SubscriptionController@subscriptionPlan']);
                 $router->post('subscription-count', ['uses' => 'SubscriptionController@subscriptionCount']);
                 $router->get('subscription-coupon', ['uses' => 'SubscriptionController@subscriptionCoupon']);
+                $router->get('subscription-data', ['uses' => 'SubscriptionController@getSubscriptions']);
 
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
@@ -149,8 +151,8 @@ $router->group(['prefix' => 'api'],
                 $router->post('inventory/damages', ['uses' => 'OrderController@receiveDamageItem']);
                 $router->get('reports/inventory/damagesList', ['uses' => 'OrderController@damagesList']);
 
-                //Products 
-                //$router->get('type/list', ['uses' => 'OrderController@typeList']);
+                //Products
+                $router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);

@@ -658,12 +658,18 @@ class OrderController extends Controller
                 $item['box_vat'] = 0;
             }
 
+            $exp_date = date('Y-m-d', strtotime("1970-01-01"));
+            if($item['exp_date']){
+                $date = str_replace('/', '-', $item['exp_date']);
+                $exp_date = date('Y-m-d', strtotime($date));
+            }
+
             $itemSave = new OrderItem();
             $itemSave->medicine_id      = $item['medicine_id'];
             $itemSave->company_id       = $company_id;
             $itemSave->quantity         = $item['quantity'];
             $itemSave->order_id         = $OrderId;
-            $itemSave->exp_date         = $item['exp_date'];
+            $itemSave->exp_date         = $exp_date;
             $itemSave->batch_no         = $item['batch_no'];
             $itemSave->unit_price       = $item['box_mrp']/$item['piece_per_box'];
             $itemSave->sub_total        = $item['amount'];

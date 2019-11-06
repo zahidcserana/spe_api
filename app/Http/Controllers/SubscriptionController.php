@@ -18,37 +18,111 @@ use Illuminate\Support\Facades\Hash;
 
 class SubscriptionController extends Controller
 {
+  private $user;
+  public function __construct(Request $request) {
+    $this->user = $request->auth;
+  }
+
   public function subscription(Request $request) {
     $user = $request->auth;
-
-    $status = false;
-    $msg = false;
     $data = $request->all();
+
+    $data['pharmacy_branch_id'] = $user->pharmacy_branch_id;
+    $branch = DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->first();
+
+    $data['subscription_count'] = $branch->subscription_count;
+    $response = $this->subscriptionRequest($data);
+    $msg = '';
+    if($response->status) {
+      $updateData['subscription_period'] = $response->data->subscription_period;
+      DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update($updateData);
+
+      $input = array(
+        'pharmacy_id' =>  $user->pharmacy_id ?? 0,
+        'pharmacy_branch_id' =>  $user->pharmacy_branch_id,
+        'coupon_code' => $data['coupon_code'],
+        'coupon_type' => $data['coupon_type'],
+        'apply_date'=>date('Y-m-d H:i:s')
+      );
+      DB::table('subscriptions')->insert($input);
+      return response()->json(['status'=>true, 'message'=>$response->message]);
+
+    }
+    return response()->json(['status'=>false, 'message'=>$response->message]);
+  }
+
+  public function subscriptionResponse() {
+    $status = false;
+    $msg = '';
+
+    $data = json_decode(file_get_contents('php://input'), true);
+
     $coupon = DB::table('subscriptions')
     ->where('coupon_type', $data['coupon_type'])
     ->where('coupon_code', $data['coupon_code'])
     ->first();
+    $subscription_period = 0;
     if($coupon) {
       if($coupon->status == 'USED') {
         $msg = 'Already used this coupon.';
       }else{
         $status = true;
         DB::table('subscriptions')->where('id',$coupon->id)->update(['status'=>'USED', 'apply_date'=>date('Y-m-d H:i:s')]);
-        $branch = DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->first();
+        $branch = DB::table('pharmacy_branches')->where('id', $data['pharmacy_branch_id'])->first();
         if($branch) {
-          if($coupon->coupon_type == 'Monthly') {
+          if($coupon->coupon_type == '1MONTH') {
             $subscription_period = $branch->subscription_period + 30;
-          }else if($coupon->coupon_type == 'Yearly') {
+          } else if($coupon->coupon_type == '3MONTH') {
+            $subscription_period = $branch->subscription_period + 30 * 3;
+          } else if($coupon->coupon_type == '6MONTH') {
+            $subscription_period = $branch->subscription_period + 30 * 6;
+          } else if($coupon->coupon_type == '1YEAR') {
             $subscription_period = $branch->subscription_period + 360;
           }
-          DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update(['subscription_period'=>$subscription_period]);
+          $updateData['subscription_count'] = $data['subscription_count'];
+          $updateData['subscription_period'] = $subscription_period;
+          DB::table('pharmacy_branches')->where('id', $data['pharmacy_branch_id'])->update($updateData);
         }
       }
     }else{
       $msg = 'Invalid coupon.';
     }
-    return response()->json(['status'=>$status, 'message'=>$msg]);
+    return response()->json(['status'=>$status, 'message'=>$msg, 'data'=>['subscription_period' => $subscription_period]]);
   }
+
+  public function subscriptionRequest($data) {
+    $curl = curl_init();
+
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => "http://103.23.41.189:99/api/subscription-response",
+        // CURLOPT_URL => "http://localhost/spe_api/api/subscription-response",
+        // CURLOPT_URL => "http://54.214.203.243:91/data_sync",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30000,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => json_encode($data),
+        CURLOPT_HTTPHEADER => array(
+            // Set here requred headers
+            "accept: */*",
+            "accept-language: en-US,en;q=0.8",
+            "content-type: application/json",
+        ),
+    ));
+
+    $response = curl_exec($curl);
+    $err = curl_error($curl);
+    curl_close($curl);
+    if ($err) {
+      return false;
+        // echo "cURL Error #:" . $err;
+    } else {
+        $response = json_decode($response);
+        return $response;
+  }
+}
 
   public function subscriptionPlan(Request $request) {
     $user = $request->auth;
@@ -82,11 +156,21 @@ class SubscriptionController extends Controller
         'pharmacy_id' => $pharmacy_id ?? 0,
         'pharmacy_branch_id' => $pharmacy_branch_id ?? 0,
         'coupon_code' => $value,
-        'coupon_type' => 'Monthly',
+        'coupon_type' => '1MONTH',
       );
       DB::table('subscriptions')->insert($input);
     }
     return response()->json($coupon);
+  }
+
+  public function getSubscriptions() {
+    $coupons = DB::table('subscriptions')->get();
+    $data['coupons'] = $coupons;
+    $subscription = DB::table('pharmacy_branches')->where('id', $this->user->pharmacy_branch_id)->first();
+    $data['subscription_period'] = $subscription->subscription_period;
+    $data['subscription_count'] = $subscription->subscription_count;
+
+    return response()->json(['status'=>false, 'data'=> $data]);
   }
 
 }
