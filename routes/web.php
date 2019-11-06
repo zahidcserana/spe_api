@@ -150,7 +150,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('reports/inventory/damagesList', ['uses' => 'OrderController@damagesList']);
 
                 //Products 
-                $router->get('type/list', ['uses' => 'OrderController@typeList']);
+                //$router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
@@ -177,6 +177,9 @@ $router->group(['prefix' => 'api'],
 $router->get('medicine-scripe', ['uses' => 'TestController@medicineScript']);
 $router->get('medicine-type', ['uses' => 'TestController@medicineTypeScript']);
 $router->get('test', ['uses' => 'TestController@test']);
+
+
+$router->get('type/list', ['uses' => 'OrderController@typeList']);
 
 $router->post('orders/sync/data', ['uses' => 'HomeController@awsData']);
 
