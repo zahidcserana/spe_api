@@ -9,6 +9,64 @@ use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
 {
+    public function medicineWithExpiredDate(Request $request) {
+      $data = $request->query();
+      $pageNo = $request->query('page_no') ?? 1;
+      $limit = $request->query('limit') ?? 500;
+      $offset = (($pageNo - 1) * $limit);
+      $where = array();
+      $user = $request->auth;
+      $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+      if (!empty($data['medicine_id'])) {
+          $where = array_merge(array(['order_items.medicine_id', $data['medicine_id']]), $where);
+      }
+      if (!empty($data['company_id'])) {
+          $where = array_merge(array(['order_items.company_id', $data['company_id']]), $where);
+      }
+      if (!empty($data['expiry_date'])) {
+          $dateRange = explode(',',$data['expiry_date']);
+          // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+          $where = array_merge(array([DB::raw('DATE(exp_date)'), '>=', $dateRange[0]]), $where);
+          $where = array_merge(array([DB::raw('DATE(exp_date)'), '<=', $dateRange[1]]), $where);
+      }
+      $query = DB::table('orders')
+      ->select('medicine_companies.company_name as company', 'medicines.brand_name', 'medicines.strength', 'medicine_types.name as type',
+      'order_items.batch_no', 'order_items.exp_date',DB::raw('(order_items.quantity * order_items.pieces_per_box) AS qty'), DB::raw('DATE_FORMAT(order_items.created_at, "%Y-%m-%d") as purchase_date'))
+      ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+      ->join('medicines', 'order_items.medicine_id', '=', 'medicines.id')
+      ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
+      ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
+      ->whereNotNull('exp_date')
+      ->where($where);
+      $total = $query->count();
+      $items = $query
+          ->orderBy('order_items.exp_date', 'desc')
+          ->offset($offset)
+          ->limit($limit)
+          ->get();
+      $data = array(
+          'total' => $total,
+          'data' => $items,
+          'page_no' => $pageNo,
+          'limit' => $limit,
+      );
+
+      // $products = DB::table('order_items')->whereNotNull('exp_date')->get();
+      // $medicineList = array();
+      // foreach ($products as $product) {
+      //   $aMedicine = array();
+      //   $medicine = Medicine::where('id', $product->id)->first();
+      //   $aMedicine['company'] = DB::table('medicine_companies')->where('id', $product->company_id)->value('company_name');
+      //   $aMedicine['medicine'] = ['name'=> $medicine->brand_name, 'strength' => $medicine->strength, 'type' => $medicine->medicineType->name];
+      //   $aMedicine['batch'] = $product->batch_no;
+      //   $aMedicine['quantity'] = $product->quantity;
+      //   $aMedicine['exp_date'] = $product->exp_date;
+      //   $aMedicine['created_at'] = date('d-m-Y', strtotime($product->created_at));
+      //   $medicineList[] = $aMedicine;
+      // }
+      return response()->json($data);
+    }
+
     public function search(Request $request)
     {
         $str = $request->input('search');

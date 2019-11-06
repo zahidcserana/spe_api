@@ -50,6 +50,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('dashboard/statistics', ['uses' => 'DashboardController@getStatistics']);
 
                 /** Medicine */
+                $router->get('medicines/expired-date', ['uses' => 'MedicineController@medicineWithExpiredDate']);
                 $router->get('medicines/search', ['uses' => 'MedicineController@search']);
                 $router->get('medicines/searchFromInventory', ['uses' => 'MedicineController@searchMedicineFromInventory']);
                 $router->post('medicines/company', ['uses' => 'MedicineController@searchByCompany']);
