@@ -17,6 +17,8 @@ class MedicineController extends Controller
       $where = array();
       $user = $request->auth;
       $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+      $where = array_merge(array(['order_items.exp_date', '<>' ,'1970-01-01']), $where);
+
       if (!empty($data['medicine_id'])) {
           $where = array_merge(array(['order_items.medicine_id', $data['medicine_id']]), $where);
       }
@@ -36,7 +38,6 @@ class MedicineController extends Controller
       ->join('medicines', 'order_items.medicine_id', '=', 'medicines.id')
       ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
       ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
-      ->whereNotNull('exp_date')
       ->where($where);
       $total = $query->count();
       $items = $query
@@ -44,27 +45,49 @@ class MedicineController extends Controller
           ->offset($offset)
           ->limit($limit)
           ->get();
+
+      foreach ($items as $item) {
+        $item->exp_status = $this->_getExpStatus($item->exp_date);
+        $item->exp_condition = $this->_getExpCondition($item->exp_date);
+      }
       $data = array(
           'total' => $total,
           'data' => $items,
           'page_no' => $pageNo,
           'limit' => $limit,
       );
-
-      // $products = DB::table('order_items')->whereNotNull('exp_date')->get();
-      // $medicineList = array();
-      // foreach ($products as $product) {
-      //   $aMedicine = array();
-      //   $medicine = Medicine::where('id', $product->id)->first();
-      //   $aMedicine['company'] = DB::table('medicine_companies')->where('id', $product->company_id)->value('company_name');
-      //   $aMedicine['medicine'] = ['name'=> $medicine->brand_name, 'strength' => $medicine->strength, 'type' => $medicine->medicineType->name];
-      //   $aMedicine['batch'] = $product->batch_no;
-      //   $aMedicine['quantity'] = $product->quantity;
-      //   $aMedicine['exp_date'] = $product->exp_date;
-      //   $aMedicine['created_at'] = date('d-m-Y', strtotime($product->created_at));
-      //   $medicineList[] = $aMedicine;
-      // }
       return response()->json($data);
+    }
+
+    private function _getExpStatus($date)
+    {
+        $expDate = date("F, Y", strtotime($date));
+
+        $today = date('Y-m-d');
+        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+        if ($date < $today) {
+            return 'EXP';
+        } else if ($date <= $exp3M) {
+            return '3M';
+        } else {
+            return 'OK';
+        }
+    }
+    private function _getExpCondition($date)
+    {
+        $expDate = date("F, Y", strtotime($date));
+
+        $today = date('Y-m-d');
+        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+        if ($date < $today) {
+            return 'EXPIRED';
+        } else if ($date <= $exp3M) {
+            return 'EXPIRED SOON';
+        } else {
+            return 'VALID';
+        }
     }
 
     public function search(Request $request)
