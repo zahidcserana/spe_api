@@ -1818,10 +1818,10 @@ class OrderController extends Controller
             $company_id = $company_details[0]->id;
         }
 
-        $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
-        $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
-        $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
-        $low_stock_qty =  $decode_filter['low_stock_qty'] ? $decode_filter['low_stock_qty'] : '';
+        $medicine_id = $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
+        $quantity = $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
+        $medicine_type_id = $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
+        $low_stock_qty = $decode_filter['low_stock_qty'];
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
@@ -1862,7 +1862,7 @@ class OrderController extends Controller
         $medicine_type_id = $details['type_id'] ? $details['type_id'] : 0;
         $company = $details['company'];
 
-        $low_stock_qty =  $details['low_stock_qty'] ? $details['low_stock_qty'] : '';
+        $low_stock_qty = $decode_filter['low_stock_qty'];
 
         $company_details = MedicineCompany::where('company_name', $company)->get();
         $company_id = 0;
@@ -1886,7 +1886,7 @@ class OrderController extends Controller
                 return $query->where('medicines.medicine_type_id', $medicine_type_id);
             });
             if ($low_stock_qty) {
-                $inventory = $inventory->whereRaw('products.quantity < products.low_stock_qty');
+                $inventory = $inventory->where('products.quantity', '<', 'products.low_stock_qty');
             }
             $inventory = $inventory->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
