@@ -1866,7 +1866,7 @@ class OrderController extends Controller
         $medicine_type_id = $details['type_id'] ? $details['type_id'] : 0;
         $company = $details['company'];
 
-        $low_stock_qty = $decode_filter['low_stock_qty'];
+        $low_stock_qty = $details['low_stock_qty'];
 
         $company_details = MedicineCompany::where('company_name', $company)->get();
         $company_id = 0;
