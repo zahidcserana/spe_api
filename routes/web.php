@@ -155,8 +155,12 @@ $router->group(['prefix' => 'api'],
                 //Products
                 $router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
+                $router->post('product/type/save', ['uses' => 'OrderController@productTypeSave']);
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
+
+                //Company
+                $router->post('company/save', ['uses' => 'OrderController@saveCompanyInformation']);
 
                 //inventory/list
                 $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);
@@ -199,6 +203,7 @@ $router->get('notification/generate', ['uses' => 'HomeController@generateNotific
 $router->get('test', ['uses' => 'UserController@test']);
 
 /** Insert Consumer products */
+$router->get('UpdateConsumerProductType', ['uses' => 'OrderController@UpdateConsumerProductType']);
 $router->get('insertconsumerproducts', ['uses' => 'OrderController@insertconsumerproducts']);
 $router->get('purchaseReportToExcels',  ['uses' => 'OrderController@purchaseReportToExcels']);
 $router->get('updateMedicineDetails',  ['uses' => 'HomeController@updateMedicineDetails']);

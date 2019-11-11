@@ -274,24 +274,16 @@ class OrderController extends Controller
 
     public function productSave(Request $request)
     {
-        $companyData = $request->company ? MedicineCompany::where('company_name', 'like', $request->company)->first() : 0;
-        $company_id = $companyData ? $companyData->id : 0;
+        $company_id = $request->company ? $request->company : 0;
         $type_id = $request->type_id ? $request->type_id : 0;
 
         $user = $request->auth;
 
-        if(!$company_id){
-            $addMedicineCompany = new MedicineCompany();
-            $addMedicineCompany->company_name = $request->company;
-            $addMedicineCompany->save();
-            $company_id =$addMedicineCompany->id;
-        }
-
-        if(!$type_id){
-            $addMedicineType = new MedicineType();
-            $addMedicineType->name = $request->type;
-            $addMedicineType->save();
-            $type_id =$addMedicineType->id;
+        if(!$company_id || !$type_id || !$request->product_name){
+            return response()->json(array(
+                'data' => "Product Added unsuccessful!",
+                'status' => false
+            ));
         }
 
         $isExist = Medicine::where('brand_name', 'like', $request->product_name)
@@ -321,6 +313,36 @@ class OrderController extends Controller
             'data' => "Product Added Successful!",
             'status' => true
         ));
+    }
+
+    public function productTypeSave(Request $request)
+    {
+        $typeDetails = $request->type ? MedicineType::where('name', 'like', $request->type)->first() : 0;
+
+        if(!sizeof($typeDetails)){
+            $addMedicineType = new MedicineType();
+            $addMedicineType->name = $request->type;
+            $addMedicineType->save();
+        }else{
+            return response()->json(['status' => false, 'message' => "Product Type Already Exist!"], 409);
+        }
+
+        return response()->json(['status' => true, 'message' => "Product Type Added Successful!"], 201);
+    }
+
+    public function saveCompanyInformation(Request $request)
+    {
+        $companyDetails = $request->company ? MedicineCompany::where('company_name', 'like', $request->company)->first() : 0;
+
+        if(!sizeof($companyDetails)){
+            $addMedicineCompany = new MedicineCompany();
+            $addMedicineCompany->company_name = $request->company;
+            $addMedicineCompany->save();
+        }else{
+            return response()->json(['status' => false, 'message' => "Company Already Exist!"]);
+        }
+
+        return response()->json(['status' => true, 'message' => "Company Added Successful!"]);
     }
 
     public function userAddedProductList(Request $request)
@@ -1762,7 +1784,7 @@ class OrderController extends Controller
 
     public function typeList(Request $request)
     {
-        $typeList = MedicineType::select('id', 'name')->get();
+        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'ASC')->get();
         return response()->json($typeList);
     }
 
@@ -2244,7 +2266,35 @@ class OrderController extends Controller
 
         endforeach;
         echo "Done";
+    }
 
+    public function UpdateConsumerProductType()
+    {
+        $ConsumerGood = ConsumerGood::all();
+
+        foreach($ConsumerGood as $item):
+            $type = $item->type;
+            if($type){
+                $MedicineType = MedicineType::where('name', 'like', $type)->get();
+
+                if(!sizeof($MedicineType)){
+                    $addCPType = new MedicineType();
+                    $addCPType->name = $type;
+                    $addCPType->save();
+                    $type_id = $addCPType->id;
+                }else{
+                    $type_id = $MedicineType[0]->id;
+                }
+    
+                $UpdateType_id = ConsumerGood::find($item->id);
+                $UpdateType_id->type_id = $type_id;
+                $UpdateType_id->save();
+            }
+
+        endforeach;
+        return response()->json(array(
+            'status' => 'ID Updated Successful'
+        ));
     }
 
 }
