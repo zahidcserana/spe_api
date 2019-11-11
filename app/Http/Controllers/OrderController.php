@@ -2244,7 +2244,35 @@ class OrderController extends Controller
 
         endforeach;
         echo "Done";
+    }
 
+    public function UpdateConsumerProductType()
+    {
+        $ConsumerGood = ConsumerGood::all();
+
+        foreach($ConsumerGood as $item):
+            $type = $item->type;
+            if($type){
+                $MedicineType = MedicineType::where('name', 'like', $type)->get();
+
+                if(!sizeof($MedicineType)){
+                    $addCPType = new MedicineType();
+                    $addCPType->name = $type;
+                    $addCPType->save();
+                    $type_id = $addCPType->id;
+                }else{
+                    $type_id = $MedicineType[0]->id;
+                }
+    
+                $UpdateType_id = ConsumerGood::find($item->id);
+                $UpdateType_id->type_id = $type_id;
+                $UpdateType_id->save();
+            }
+
+        endforeach;
+        return response()->json(array(
+            'status' => 'ID Updated Successful'
+        ));
     }
 
 }
