@@ -33,6 +33,7 @@ class SubscriptionController extends Controller
     $data['subscription_count'] = $branch->subscription_count;
     $response = $this->subscriptionRequest($data);
     $msg = '';
+
     if($response->status) {
       $updateData['subscription_period'] = $response->data->subscription_period;
       DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update($updateData);
@@ -42,9 +43,13 @@ class SubscriptionController extends Controller
         'pharmacy_branch_id' =>  $user->pharmacy_branch_id,
         'coupon_code' => $data['coupon_code'],
         'coupon_type' => $data['coupon_type'],
-        'apply_date'=>date('Y-m-d H:i:s')
+        'status' => 'USED',
+        'apply_date' => date('Y-m-d H:i:s'),
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
       );
-      DB::table('subscriptions')->insert($input);
+      $subscription = DB::table('subscriptions')->insert($input);
+
       return response()->json(['status'=>true, 'message'=>$response->message]);
 
     }
@@ -92,9 +97,11 @@ class SubscriptionController extends Controller
 
   public function subscriptionRequest($data) {
     $curl = curl_init();
+    //dd(json_encode($data));
 
     curl_setopt_array($curl, array(
-        CURLOPT_URL => "http://103.23.41.189:99/api/subscription-response",
+        CURLOPT_URL => "http://127.0.0.1:8090/api/apply-subscription",
+        //CURLOPT_URL => "http://103.23.41.189:99/api/subscription-response",
         // CURLOPT_URL => "http://localhost/spe_api/api/subscription-response",
         // CURLOPT_URL => "http://54.214.203.243:91/data_sync",
         CURLOPT_RETURNTRANSFER => true,
