@@ -103,8 +103,8 @@ class MedicineController extends Controller
                 return $query->where('company_id', $company_id);
             })
             ->orWhere('id', $str)
-            ->inRandomOrder()
-            ->limit(10)
+            // ->inRandomOrder()
+            // ->limit(10)
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {
@@ -124,8 +124,8 @@ class MedicineController extends Controller
             ->when($pharmacyMedicineIds, function ($query, $pharmacyMedicineIds) {
                    return $query->whereIn('id', $pharmacyMedicineIds);
                })
-            ->inRandomOrder()
-            ->limit(10)
+            // ->inRandomOrder()
+            // ->limit(10)
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {
@@ -153,8 +153,8 @@ class MedicineController extends Controller
                 return $query->whereIn('id', $pharmacyMedicineIds);
             })
             ->orWhere('id', $str)
-            ->inRandomOrder()
-            ->limit(10)
+            // ->inRandomOrder()
+            // ->limit(10)
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {

@@ -433,7 +433,7 @@ class OrderController extends Controller
     {
         $details = $request->details;
         $user    = $request->auth;
-        
+
         $orderId = $details['order_id'];
         $update_item_id = $details['item_id'];
         $update_new_qty = $details['new_quantity'];
@@ -451,7 +451,7 @@ class OrderController extends Controller
         if($previous_total_qty > $new_total_qty)
         {
             $updated_product_quantity = $previous_total_qty - $new_total_qty;
-            
+
             $total_price = ($trade_price + $box_vat) * $update_new_qty;
             $grandTotalPrice = $total_price;
 
@@ -486,7 +486,7 @@ class OrderController extends Controller
             // }
 
             $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
-            
+
             $due = $sub_total - $total_advance_amount;
 
             $UpdateOrderInfo->total_due_amount = $due;
@@ -541,7 +541,7 @@ class OrderController extends Controller
             // }
 
             $total_advance_amount = $UpdateOrderInfo->total_advance_amount;
-            
+
             $due = $sub_total - $total_advance_amount;
 
             $UpdateOrderInfo->total_due_amount = $due;
@@ -623,7 +623,7 @@ class OrderController extends Controller
 
         $UpdateItemInfo = OrderItem::find($item_id);
         $UpdateItemInfo->delete();
-        
+
         return response()->json(array(
             'message' => "Purchase item deleted Successfull!",
         ));
@@ -710,7 +710,7 @@ class OrderController extends Controller
                 $UpdateMedicine->mrp_per_box = $item['box_mrp'] ? $item['box_mrp'] : 0;
                 $UpdateMedicine->save();
             }
-            
+
             $per_item_vat = ($item['box_trade_price'] + $item['box_vat'])/$item['piece_per_box'];
 
             $isProcuctExist = Product::where('medicine_id', $medicine_id)->get();
@@ -1155,10 +1155,10 @@ class OrderController extends Controller
     {
         if ($order_id) {
             $orderDetails = Order::select('id as order_id',
-            'invoice', 
-            'purchase_date', 
-            'purchase_date', 
-            'quantity', 
+            'invoice',
+            'purchase_date',
+            'purchase_date',
+            'quantity',
             'sub_total',
             'tax as vat',
             'tax_type as vat_type',
@@ -1772,8 +1772,8 @@ class OrderController extends Controller
         $str = $request->input('search');
 
         $typeList = MedicineType::where('name', 'like', $str . '%')
-            ->inRandomOrder()
-            ->limit(10)
+            // ->inRandomOrder()
+            // ->limit(10)
             ->get();
         $data = array();
         foreach ($typeList as $type) {
@@ -2285,7 +2285,7 @@ class OrderController extends Controller
                 }else{
                     $type_id = $MedicineType[0]->id;
                 }
-    
+
                 $UpdateType_id = ConsumerGood::find($item->id);
                 $UpdateType_id->type_id = $type_id;
                 $UpdateType_id->save();
