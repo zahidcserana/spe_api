@@ -858,13 +858,43 @@ class OrderController extends Controller
         $company = $details['company'];
         $sales_man = $details['sales_man'] ? $details['sales_man'] : 0;
         $product = $details['product'];
+        $medicine_id = 0;
+
+        if($product){
+            $medicine_id = $details['medicine_id'];
+        }
 
         $company_details = MedicineCompany::where('company_name', $company)->get();
         $company_id = 0;
         $company_orders = [];
         if(sizeof($company_details)){
             $company_id = $company_details[0]->id;
-            $company_orders = OrderItem::distinct('order_id')->where('company_id', $company_id)->pluck('order_id');
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('company_id', $company_id)
+            ->pluck('order_id');
+        }
+
+        if($medicine_id){
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('medicine_id', $medicine_id)
+            ->pluck('order_id');
+        }
+
+        if(sizeof($company_details) && $medicine_id){
+            
+            $company_id = $company_details[0]->id;
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('company_id', $company_id)
+            ->where('medicine_id', $medicine_id)
+            ->pluck('order_id');
+
+            if(!sizeof($company_orders)){
+                return response()->json(array(
+                    'data' => $company_orders,
+                    'status' => 'Successful',
+                    'message' => 'Purchase list',
+                ));
+            }
         }
 
         $data = [];
