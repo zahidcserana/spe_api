@@ -50,10 +50,18 @@ class SaleController extends Controller
         $saleData = Sale::where('id', $data['sale_id'])->first();
 
         $dueLog = $this->_dueLog($saleData, $data);
+        $tDue = $saleData->total_due_amount - ($data['amount'] ?? 0);
+        $discount = 0;
+        if($tDue <= 5) {
+          $discount = $tDue;
+          $tDue = 0;
+        }
 
         $input = array(
-          'total_due_amount' => $saleData->total_due_amount - ($data['amount'] ?? 0),
-          'status' => $data['status'],
+          'total_due_amount' => $tDue,
+          'status' => $tDue > 0 ? 'DUE' : 'COMPLETE',
+          'discount' => $saleData->discount + $discount,
+          // 'status' => $data['status'],
           'due_log' => json_encode($dueLog),
           'updated_at' => $data['updated_at'],
           'updated_by' => $data['updated_by'],
@@ -482,7 +490,9 @@ class SaleController extends Controller
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
         }
-        $query = Sale::where($where);
+        $query = Sale::where($where)
+        ->orWhere('due_log', '<>', null)
+        ;
         $total = $query->count();
         $orders = $query
             ->orderBy('sales.id', 'desc')
