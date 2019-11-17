@@ -1771,8 +1771,7 @@ class OrderController extends Controller
     {
         $str = $request->input('search');
 
-        $typeList = MedicineType::where('name', 'like', $str . '%')
-            ->get();
+        $typeList = MedicineType::where('name', 'like', $str . '%')->get();
         $data = array();
         foreach ($typeList as $type) {
             $data[] = ['id' => $type->id, 'name' => $type->name];
