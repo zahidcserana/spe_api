@@ -1772,8 +1772,6 @@ class OrderController extends Controller
         $str = $request->input('search');
 
         $typeList = MedicineType::where('name', 'like', $str . '%')
-            // ->inRandomOrder()
-            // ->limit(10)
             ->get();
         $data = array();
         foreach ($typeList as $type) {
