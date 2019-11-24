@@ -752,16 +752,44 @@ class OrderController extends Controller
     }
 
     public function purchaseList(Request $request){
+      $data = $request->query();
+      $pageNo = $request->query('page_no') ?? 1;
+      $limit = $request->query('limit') ?? 500;
+      $offset = (($pageNo - 1) * $limit);
+      $where = array();
+      $user = $request->auth;
+      $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+      if (!empty($data['invoice'])) {
+          $where = array_merge(array(['orders.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
+      }
+      if (!empty($data['company_id'])) {
+          $where = array_merge(array(['orders.company_id', 'LIKE', $data['company_id']]), $where);
+      }
 
-        $query = $request->query();
+      if (!empty($data['purchase_date'])) {
+          $dateRange = explode(',',$data['purchase_date']);
+          // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+          $where = array_merge(array([DB::raw('DATE(orders.created_at)'), '>=', $dateRange[0]]), $where);
+          $where = array_merge(array([DB::raw('DATE(orders.created_at)'), '<=', $dateRange[1]]), $where);
+      }
+      // $query = Sale::where($where);
+      // $total = $query->count();
+      // $orders = $query
+      //     ->orderBy('sales.id', 'desc')
+      //     ->offset($offset)
+      //     ->limit($limit)
+      //     ->get();
 
-        $pageNo = $request->query('page_no') ?? 1;
-        $limit = $request->query('limit') ?? 100;
-        $offset = (($pageNo - 1) * $limit);
 
-        $where = array();
-        $user = $request->auth;
-        $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        // $query = $request->query();
+        //
+        // $pageNo = $request->query('page_no') ?? 1;
+        // $limit = $request->query('limit') ?? 100;
+        // $offset = (($pageNo - 1) * $limit);
+        //
+        // $where = array();
+        // $user = $request->auth;
+        // $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
 
         $query = Order::select('orders.id as order_id',
             'orders.invoice',
@@ -778,7 +806,8 @@ class OrderController extends Controller
             'orders.total_advance_amount',
             'orders.total_due_amount',
             'orders.status',
-            'orders.created_by')->where($where)
+            'orders.created_by')
+            ->where($where)
             ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id');
 
         $total = $query->count();
@@ -858,13 +887,43 @@ class OrderController extends Controller
         $company = $details['company'];
         $sales_man = $details['sales_man'] ? $details['sales_man'] : 0;
         $product = $details['product'];
+        $medicine_id = 0;
+
+        if($product){
+            $medicine_id = $details['medicine_id'];
+        }
 
         $company_details = MedicineCompany::where('company_name', $company)->get();
         $company_id = 0;
         $company_orders = [];
         if(sizeof($company_details)){
             $company_id = $company_details[0]->id;
-            $company_orders = OrderItem::distinct('order_id')->where('company_id', $company_id)->pluck('order_id');
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('company_id', $company_id)
+            ->pluck('order_id');
+        }
+
+        if($medicine_id){
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('medicine_id', $medicine_id)
+            ->pluck('order_id');
+        }
+
+        if(sizeof($company_details) && $medicine_id){
+
+            $company_id = $company_details[0]->id;
+            $company_orders = OrderItem::distinct('order_id')
+            ->where('company_id', $company_id)
+            ->where('medicine_id', $medicine_id)
+            ->pluck('order_id');
+
+            if(!sizeof($company_orders)){
+                return response()->json(array(
+                    'data' => $company_orders,
+                    'status' => 'Successful',
+                    'message' => 'Purchase list',
+                ));
+            }
         }
 
         $data = [];
@@ -1771,10 +1830,7 @@ class OrderController extends Controller
     {
         $str = $request->input('search');
 
-        $typeList = MedicineType::where('name', 'like', $str . '%')
-            // ->inRandomOrder()
-            // ->limit(10)
-            ->get();
+        $typeList = MedicineType::where('name', 'like', $str . '%')->get();
         $data = array();
         foreach ($typeList as $type) {
             $data[] = ['id' => $type->id, 'name' => $type->name];
