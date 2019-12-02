@@ -35,6 +35,22 @@ class UserController extends Controller
         return response()->json(['success' => true, 'data' => $users]);
     }
 
+    public function password(Request $request)
+    {
+        $this->validate($request, [
+            'password' => 'required|confirmed|min:6'
+        ]);
+        $data = $request->all();
+        $user = User::findOrFail($data['user']);
+        $input = array(
+          'password' => Hash::make($data['password']),
+          'updated_at' => date('Y-m-d H:i:s')
+        );
+        $user->update($input);
+
+        return response()->json(['success' => true]);
+    }
+
     public function adminCheck(Request $request) {
       $status = false;
       if(!$request->email || !$request->password) {

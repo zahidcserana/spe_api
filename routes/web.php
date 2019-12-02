@@ -21,6 +21,7 @@ $router->group(['prefix' => 'api'],
             function () use ($router) {
                 $router->get('users', ['uses' => 'UserController@showAllUsers']);
                 $router->post('users', ['uses' => 'UserController@create']);
+                $router->post('users/password', ['uses' => 'UserController@password']);
 
                 /** Users */
                 $router->post('users/admin/check', ['uses' => 'UserController@adminCheck']);
