@@ -319,7 +319,7 @@ class OrderController extends Controller
     {
         $typeDetails = $request->type ? MedicineType::where('name', 'like', $request->type)->first() : 0;
 
-        if(!sizeof($typeDetails)){
+        if(!$typeDetails){
             $addMedicineType = new MedicineType();
             $addMedicineType->name = $request->type;
             $addMedicineType->save();
@@ -334,7 +334,7 @@ class OrderController extends Controller
     {
         $companyDetails = $request->company ? MedicineCompany::where('company_name', 'like', $request->company)->first() : 0;
 
-        if(!sizeof($companyDetails)){
+        if(!$companyDetails){
             $addMedicineCompany = new MedicineCompany();
             $addMedicineCompany->company_name = $request->company;
             $addMedicineCompany->save();
@@ -362,7 +362,6 @@ class OrderController extends Controller
     }
 
     public function previousPurchaseDetails(Request $request){
-        //$request
         if($request->medicine_id){
             //$itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
             $itemDetails = Medicine::select('pcs_per_box as pieces_per_box', 'tp_per_box as trade_price', 'vat_per_box as box_vat', 'mrp_per_box as mrp')->where('id', $request->medicine_id)->first();
