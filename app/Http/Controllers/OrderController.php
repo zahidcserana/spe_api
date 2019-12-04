@@ -363,8 +363,10 @@ class OrderController extends Controller
 
     public function previousPurchaseDetails(Request $request){
         if($request->medicine_id){
-            //$itemDetails = OrderItem::where('medicine_id', $request->medicine_id)->orderBy('id', 'DESC')->limit(1)->first();
-            $itemDetails = Medicine::select('pcs_per_box as pieces_per_box', 'tp_per_box as trade_price', 'vat_per_box as box_vat', 'mrp_per_box as mrp')->where('id', $request->medicine_id)->first();
+            $itemDetails = Medicine::select('medicines.pcs_per_box as pieces_per_box', 'medicines.tp_per_box as trade_price', 'medicines.vat_per_box as box_vat', 'medicines.mrp_per_box as mrp', 'products.low_stock_qty')
+            ->where('medicines.id', $request->medicine_id)
+            ->leftjoin('products', 'products.medicine_id', '=', 'medicines.id')
+            ->first();
         }
         return response()->json(array(
             'data' => $itemDetails,
@@ -722,6 +724,11 @@ class OrderController extends Controller
                 if($item['update_price']){
                     $UpdateProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
                     $UpdateProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
+                    
+                    if($item['low_stock_qty']){
+                        $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
+                    }
+
                 }
                 $UpdateProduct->batch_no            = $item['batch_no'];
                 $UpdateProduct->company_id          = $company_id ? $company_id : 0;
@@ -736,6 +743,10 @@ class OrderController extends Controller
                 if($item['update_price']){
                     $InsertProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
                     $InsertProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
+
+                    if($item['low_stock_qty']){
+                        $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
+                    }
                 }
                 $InsertProduct->batch_no            = $item['batch_no'];
                 $InsertProduct->company_id          = $company_id ? $company_id : 0;
