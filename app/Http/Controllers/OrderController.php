@@ -724,7 +724,7 @@ class OrderController extends Controller
                 if($item['update_price']){
                     $UpdateProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
                     $UpdateProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
-                    
+
                     if($item['low_stock_qty']){
                         $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
                     }
@@ -1804,6 +1804,23 @@ class OrderController extends Controller
 
         return response()->json(array(
             'data' => $qty,
+            'status' => 'Successful',
+            'message' => 'Update List'
+        ));
+    }
+
+    public function updateMRPTP(Request $request){
+        $id = $request->id;
+        $mrp = $request->mrp;
+        $tp = $request->tp;
+
+        $UpdateProduct = Product::find($id);
+        $UpdateProduct->mrp = $mrp;
+        $UpdateProduct->tp = $tp;
+        $UpdateProduct->save();
+
+        return response()->json(array(
+            'data' => $UpdateProduct,
             'status' => 'Successful',
             'message' => 'Update List'
         ));
