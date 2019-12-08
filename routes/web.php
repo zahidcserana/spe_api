@@ -163,11 +163,15 @@ $router->group(['prefix' => 'api'],
                 $router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
                 $router->post('product/type/save', ['uses' => 'OrderController@productTypeSave']);
+                //type/update
+                $router->post('type/update', ['uses' => 'OrderController@UpdateTypeInformation']);
+
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
 
                 //Company
                 $router->post('company/save', ['uses' => 'OrderController@saveCompanyInformation']);
+                $router->post('company/update', ['uses' => 'OrderController@UpdateCompanyInformation']);
 
                 //inventory/list
                 $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);
