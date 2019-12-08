@@ -89,6 +89,8 @@ $router->group(['prefix' => 'api'],
 
                 /** Products */
                 $router->get('products/master-list', ['uses' => 'ProductController@index']);
+                $router->post('products/{id}', ['uses' => 'ProductController@edit']);
+                $router->get('products/{id}/delete', ['uses' => 'ProductController@delete']);
 
                 /** Purchase Order */
                 $router->get('orders/latest', ['uses' => 'OrderController@latestPurchase']);

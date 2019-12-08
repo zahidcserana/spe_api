@@ -12,6 +12,7 @@ use App\Models\Inventory;
 use App\Models\DamageItem;
 use App\Models\ConsumerGood;
 use App\Models\MedicineType;
+use App\Models\Notification;
 use App\Models\MedicineCompany;
 use App\Models\InventoryDetail;
 use App\Models\Order;
@@ -36,11 +37,17 @@ class ProductController extends Controller
       $where = array();
       $user = $request->auth;
       // $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-      if (!empty($data['company_name'])) {
-          $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $data['company_name'] . '%']), $where);
+      if (!empty($data['generic'])) {
+          $where = array_merge(array(['medicines.generic_name', 'LIKE', $data['generic'] . '%']), $where);
       }
-      if (!empty($data['customer_mobile'])) {
-          $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $data['customer_mobile'] . '%']), $where);
+      if (!empty($data['company_id'])) {
+          $where = array_merge(array(['medicines.company_id', $data['company_id']]), $where);
+      }
+      if (!empty($data['medicine_id'])) {
+          $where = array_merge(array(['medicines.id', $data['medicine_id']]), $where);
+      }
+      if (!empty($data['type_id'])) {
+          $where = array_merge(array(['medicines.medicine_type_id', $data['type_id']]), $where);
       }
       if (!empty($data['sale_date'])) {
           $dateRange = explode(',',$data['sale_date']);
@@ -65,6 +72,34 @@ class ProductController extends Controller
           'limit' => $limit,
       );
       return response()->json($data);
+  }
+  public function edit($id, Request $request)
+  {
+      $data = $request->all();
+      $input = array(
+        'brand_name' => $data['medicine'],
+        'company_id' => $data['company_id'],
+        'generic_name' => $data['generic'],
+        'medicine_type_id' => $data['type_id'],
+        'updated_at' => date('Y-m-d H:i:s')
+      );
+
+      $product = Medicine::findOrFail($id);
+      $product->update($input);
+
+      return response()->json(['success' => true]);
+  }
+
+  public function delete($id) {
+    SaleItem::where('medicine_id', $id)->delete();
+    CartItem::where('medicine_id', $id)->delete();
+    OrderItem::where('medicine_id', $id)->delete();
+    DamageItem::where('medicine_id', $id)->delete();
+    Product::where('medicine_id', $id)->delete();
+    Notification::where('medicine_id', $id)->delete();
+    Medicine::where('id', $id)->delete();
+    
+    return response()->json(['success' => true]);
   }
 
 }

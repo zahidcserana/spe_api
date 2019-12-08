@@ -6,13 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Medicine extends Model
 {
-    public function medicineType()
-    {
-        return $this->belongsTo('App\Models\MedicineType');
-    }
+  protected $guarded = [];
 
-    public function company()
-    {
-        return $this->belongsTo('App\Models\MedicineCompany');
-    }
+  public function medicineType()
+  {
+      return $this->belongsTo('App\Models\MedicineType');
+  }
+
+  public function company()
+  {
+      return $this->belongsTo('App\Models\MedicineCompany');
+  }
 }
