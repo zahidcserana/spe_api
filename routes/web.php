@@ -163,6 +163,7 @@ $router->group(['prefix' => 'api'],
 
                 //Company
                 $router->post('company/save', ['uses' => 'OrderController@saveCompanyInformation']);
+                $router->post('company/update', ['uses' => 'OrderController@UpdateCompanyInformation']);
 
                 //inventory/list
                 $router->get('inventory/listFilter', ['uses' => 'OrderController@inventoryListFilter']);

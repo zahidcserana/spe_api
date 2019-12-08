@@ -345,6 +345,21 @@ class OrderController extends Controller
         return response()->json(['status' => true, 'message' => "Company Added Successful!"]);
     }
 
+    public function UpdateCompanyInformation(Request $request)
+    {
+        $companyDetails = $request->old_company ? MedicineCompany::where('company_name', 'like', $request->old_company)->first() : 0;
+
+        if($companyDetails){
+            $UpdateMedicineCompany = MedicineCompany::find($companyDetails->id);
+            $UpdateMedicineCompany->company_name = $request->new_company;
+            $UpdateMedicineCompany->save();
+        }else{
+            return response()->json(['status' => false, 'message' => "Company Not Found!"]);
+        }
+
+        return response()->json(['status' => true, 'message' => "Company Updated Successful!"]);
+    }
+
     public function userAddedProductList(Request $request)
     {
         $user = $request->auth;
