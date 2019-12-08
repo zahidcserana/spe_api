@@ -52,9 +52,11 @@ class Sale extends Model
 
     private function _createOrderInvoice($orderId, $pharmacy_branch_id)
     {
-        $pharmacyBranchModel = new PharmacyBranch();
-        $pharmacyBranch = $pharmacyBranchModel->where('id', $pharmacy_branch_id)->first();
-        $invoice = $orderId . substr($pharmacyBranch->branch_mobile, -4) . Carbon::now()->timestamp;
+        // $pharmacyBranchModel = new PharmacyBranch();
+        // $pharmacyBranch = $pharmacyBranchModel->where('id', $pharmacy_branch_id)->first();
+        // $invoice = $orderId . substr($pharmacyBranch->branch_mobile, -4) . Carbon::now()->timestamp;
+        $invoice = 'INV-000'.$orderId;
+
         $this->where('id', $orderId)->update(['invoice' => $invoice]);
         return;
     }

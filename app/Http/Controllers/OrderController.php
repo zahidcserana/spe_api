@@ -787,6 +787,9 @@ class OrderController extends Controller
       if (!empty($data['invoice'])) {
           $where = array_merge(array(['orders.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
       }
+      if (!empty($data['company_invoice'])) {
+          $where = array_merge(array(['orders.company_invoice', 'LIKE', '%' . $data['company_invoice'] . '%']), $where);
+      }
       if (!empty($data['company_id'])) {
           $where = array_merge(array(['orders.company_id', 'LIKE', $data['company_id']]), $where);
       }

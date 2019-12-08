@@ -87,6 +87,9 @@ $router->group(['prefix' => 'api'],
                 $router->post('medicines/batch', ['uses' => 'MedicineController@batchList']);
                 $router->post('medicines/quantity', ['uses' => 'MedicineController@getAvailableQuantity']);
 
+                /** Products */
+                $router->get('products/master-list', ['uses' => 'ProductController@index']);
+
                 /** Purchase Order */
                 $router->get('orders/latest', ['uses' => 'OrderController@latestPurchase']);
                 $router->post('orders', ['uses' => 'OrderController@create']); // unused
