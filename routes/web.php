@@ -163,6 +163,9 @@ $router->group(['prefix' => 'api'],
                 $router->get('type/list', ['uses' => 'OrderController@typeList']);
                 $router->get('type/search', ['uses' => 'OrderController@typeSearch']);
                 $router->post('product/type/save', ['uses' => 'OrderController@productTypeSave']);
+                //type/update
+                $router->post('type/update', ['uses' => 'OrderController@UpdateTypeInformation']);
+
                 $router->post('product/save', ['uses' => 'OrderController@productSave']);
                 $router->get('product/list', ['uses' => 'OrderController@userAddedProductList']);
 

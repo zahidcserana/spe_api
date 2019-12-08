@@ -360,6 +360,25 @@ class OrderController extends Controller
         return response()->json(['status' => true, 'message' => "Company Updated Successful!"]);
     }
 
+    public function UpdateTypeInformation(Request $request)
+    {
+        if($request->old_type_id){
+            $typeDetails = $request->old_type_id ? MedicineType::where('id', $request->old_type_id)->first() : 0;
+
+            if($typeDetails){
+                $UpdateMedicineType = MedicineType::find($typeDetails->id);;
+                $UpdateMedicineType->name = $request->new_type;
+                $UpdateMedicineType->save();
+            }else{
+                return response()->json(['status' => false, 'message' => "Please Check All the details!"], 302);
+            }
+        }else{
+            return response()->json(['status' => false, 'message' => "Please Check All the details!"], 302);
+        }
+        
+        return response()->json(['status' => true, 'message' => "Product Type Updated Successful!"], 201);
+    }
+
     public function userAddedProductList(Request $request)
     {
         $user = $request->auth;
