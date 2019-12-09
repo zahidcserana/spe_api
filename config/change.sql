@@ -10,10 +10,8 @@ ALTER TABLE `products` ADD `is_sync` BOOLEAN NULL DEFAULT FALSE AFTER `pharmacy_
 ALTER TABLE `products` ADD `sale_quantity` INT NULL DEFAULT '0' AFTER `quantity`;
 ALTER TABLE `cart_items` ADD `tp` FLOAT(15,2) NOT NULL DEFAULT '0' AFTER `unit_price`;
 ALTER TABLE `sale_items` ADD `tp` FLOAT(15,2) NOT NULL DEFAULT '0' AFTER `mrp`;
-
 ALTER TABLE `pharmacy_branches` ADD `subscription_period` INT NOT NULL DEFAULT '30' AFTER `branch_model_pharmacy_status`;
 ALTER TABLE `pharmacy_branches` ADD `subscription_count` INT NOT NULL DEFAULT '1' AFTER `subscription_period`;
-
 CREATE TABLE `subscriptions` (
  `id` int(11) NOT NULL AUTO_INCREMENT,
  `pharmacy_id` int(11) NOT NULL,
@@ -26,3 +24,12 @@ CREATE TABLE `subscriptions` (
  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+
+/* 09.12.19 */
+ALTER TABLE `sale_items` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `cart_items` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `order_items` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `damage_items` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `notifications` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `products` ADD `deleted_at` TIMESTAMP NULL;
+ALTER TABLE `medicines` ADD `deleted_at` TIMESTAMP NULL;
