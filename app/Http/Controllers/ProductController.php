@@ -28,6 +28,20 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
+  public function genericSearch(Request $request) {
+    $str = $request->input('search');
+
+    $list = Medicine::where('medicines.generic_name', 'like', $str . '%')
+          ->join('products', 'medicines.id', '=', 'products.medicine_id')
+          ->orderBy('brand_name','asc')
+          ->distinct()
+          ->get(['generic_name']);
+    $data = array();
+    foreach ($list as $item) {
+      $data[] = $item->generic_name;
+    }
+    return response()->json($data);
+  }
   public function index(Request $request)
   {
       $data = $request->query();
@@ -98,7 +112,7 @@ class ProductController extends Controller
     Product::where('medicine_id', $id)->delete();
     Notification::where('medicine_id', $id)->delete();
     Medicine::where('id', $id)->delete();
-    
+
     return response()->json(['success' => true]);
   }
 

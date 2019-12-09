@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\DB;
 use phpDocumentor\Reflection\Types\This;
 use App\Models\Sale;
 use Auth;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SaleItem extends Model
 {
     protected $guarded = [];
+    use SoftDeletes;
 
     public function addItem($orderId, $cartId)
     {

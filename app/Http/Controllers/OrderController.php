@@ -375,7 +375,7 @@ class OrderController extends Controller
         }else{
             return response()->json(['status' => false, 'message' => "Please Check All the details!"], 302);
         }
-        
+
         return response()->json(['status' => true, 'message' => "Product Type Updated Successful!"], 201);
     }
 
@@ -1923,6 +1923,7 @@ class OrderController extends Controller
         $medicine_id =  $decode_filter['medicine_id'] ? $decode_filter['medicine_id'] : 0;
         $quantity =  $decode_filter['quantity'] ? $decode_filter['quantity'] : 0;
         $medicine_type_id =  $decode_filter['type_id'] ? $decode_filter['type_id'] : 0;
+        $generic =  $decode_filter['generic'] ?? 0;
         $low_stock_qty = $decode_filter['low_stock_qty'];
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
@@ -1939,6 +1940,9 @@ class OrderController extends Controller
             })
             ->when($medicine_type_id, function ($query, $medicine_type_id) {
                 return $query->where('medicines.medicine_type_id', $medicine_type_id);
+            })
+            ->when($generic, function ($query, $generic) {
+                return $query->where('medicines.generic_name', 'like', $generic . '%');
             });
             if ($low_stock_qty) {
                 $inventory = $inventory->whereRaw('products.quantity < products.low_stock_qty');
