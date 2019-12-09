@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CartItem extends Model
 {
-    protected $guarded = [];
+     use SoftDeletes;
+     protected $guarded = [];
 
     public function addItem($data)
     {

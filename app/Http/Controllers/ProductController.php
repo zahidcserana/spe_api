@@ -98,7 +98,7 @@ class ProductController extends Controller
     Product::where('medicine_id', $id)->delete();
     Notification::where('medicine_id', $id)->delete();
     Medicine::where('id', $id)->delete();
-    
+
     return response()->json(['success' => true]);
   }
 
