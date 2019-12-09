@@ -874,12 +874,16 @@ class OrderController extends Controller
 
     public function masterPurchaseList(Request $request){
 
+        $today = date("Y-m-d");
+        $lastWeek = date("Y-m-d", strtotime("-7 days"));
+
         $data = [];
         $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.discount', 'orders.total_amount', 'orders.total_payble_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name', 'users.name as created_by')
         ->where('orders.status', 'ACCEPTED')
         ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id')
         ->leftjoin('users', 'users.id', '=', 'orders.created_by')
         ->orderBy('id', 'DESC')
+        ->whereBetween('orders.purchase_date', [$lastWeek, $today])
         ->get();
 
         $total_amount = 0;
