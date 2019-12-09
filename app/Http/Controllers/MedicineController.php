@@ -102,6 +102,7 @@ class MedicineController extends Controller
             ->when($company_id, function ($query, $company_id) {
                 return $query->where('company_id', $company_id);
             })
+            ->orderBy('brand_name','asc')
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {
