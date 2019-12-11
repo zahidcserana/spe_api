@@ -33,3 +33,5 @@ ALTER TABLE `damage_items` ADD `deleted_at` TIMESTAMP NULL;
 ALTER TABLE `notifications` ADD `deleted_at` TIMESTAMP NULL;
 ALTER TABLE `products` ADD `deleted_at` TIMESTAMP NULL;
 ALTER TABLE `medicines` ADD `deleted_at` TIMESTAMP NULL;
+
+ALTER TABLE `users` ADD `pos_version` INT(1) NULL DEFAULT '1' AFTER `pharmacy_branch_id`;

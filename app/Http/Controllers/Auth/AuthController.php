@@ -19,7 +19,7 @@ class AuthController extends Controller
         $payload = [
             'iss' => "lumen-jwt", // Issuer of the token
             'sub' => $user->id, // Subject of the token
-            'iat' => time(), // Time when JWT was issued. 
+            'iat' => time(), // Time when JWT was issued.
             'exp' => time() + 60 * 60 * 24 * 30 * 12 // Expiration time
         ];
 
@@ -58,6 +58,7 @@ class AuthController extends Controller
                     'token' => $this->jwt($user),
                     'email' => $user->email,
                     'user_type' => $user->user_type,
+                    'pos_version' => $user->pos_version ?? 1,
                 ]
             ], 200);
         }
