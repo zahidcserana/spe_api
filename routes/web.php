@@ -199,7 +199,7 @@ $router->get('medicine-type', ['uses' => 'TestController@medicineTypeScript']);
 $router->get('test', ['uses' => 'TestController@test']);
 
 
-$router->get('type/list', ['uses' => 'OrderController@typeList']);
+//$router->get('type/list', ['uses' => 'OrderController@typeList']);
 
 $router->post('orders/sync/data', ['uses' => 'HomeController@awsData']);
 

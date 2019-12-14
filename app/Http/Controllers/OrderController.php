@@ -1908,7 +1908,7 @@ class OrderController extends Controller
 
     public function typeList(Request $request)
     {
-        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'ASC')->get();
+        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'desc')->get();
         return response()->json($typeList);
     }
 

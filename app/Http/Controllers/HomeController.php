@@ -12,6 +12,8 @@ use App\Models\Product;
 use App\Models\SaleItem;
 use App\Models\Notification;
 use App\Models\InventoryDetail;
+use App\Models\MedicineType;
+use App\Models\MedicineCompany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -676,20 +678,67 @@ class HomeController extends Controller
 
     public function updateMedicineDetails(){
         $medicineDetails = Beximco::all();
+
         foreach ($medicineDetails as $medicine):
             $med_id = $medicine->med_id;
             $med_TP = $medicine->med_TP;
             $med_VAT = $medicine->med_VAT;
             $med_MRP = $medicine->med_MRP;
             $med_qty_per_box = $medicine->med_qty_per_box;
+            $med_name = $medicine->med_name;
+
+            $med_company = $medicine->med_company_id;
+            $med_type = $medicine->med_type;
+            $med_generic = $medicine->med_generic;
+            $med_strength = $medicine->med_strength;
 
             $UpdateMedicine = Medicine::find($med_id);
             if(sizeof($UpdateMedicine)){
+                $UpdateMedicine->brand_name  = $med_name;
                 $UpdateMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box :0;
                 $UpdateMedicine->tp_per_box  = $med_TP ? $med_TP : 0;
                 $UpdateMedicine->vat_per_box = $med_VAT ? $med_VAT : 0;
                 $UpdateMedicine->mrp_per_box = $med_MRP ? $med_MRP : 0;
                 $UpdateMedicine->save();
+            }else{
+                if(!$med_id){
+
+                    $company = MedicineCompany::where('company_name', 'like', $med_company)->get();
+
+                    if(sizeof($company)){
+                        $company_id = $company[0]->id;
+                    }else{
+                        $addCompany = new MedicineCompany();
+                        $addCompany->company_name = $med_company;
+                        $addCompany->save();
+                        $company_id = $addCompany->id;
+                    }
+
+                    $MedicineType = MedicineType::where('name', 'like', $med_type)->get();
+
+                    if(sizeof($MedicineType)){
+                        $type_id = $MedicineType[0]->id;
+                    }else{
+                        $addCPType = new MedicineType();
+                        $addCPType->name = $med_type;
+                        $addCPType->save();
+                        $type_id = $addCPType->id;
+                    }
+
+                    $AddMedicine = new Medicine();
+                    $AddMedicine->brand_name  = $med_name;
+                    $AddMedicine->generic_name= $med_generic;
+                    $AddMedicine->strength    = $med_strength;
+                    $AddMedicine->company_id  = $company_id;
+                    $AddMedicine->medicine_type_id = $type_id;
+                    $AddMedicine->brand_name  = $med_name;
+                    $AddMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box :0;
+                    $AddMedicine->tp_per_box  = $med_TP ? $med_TP : 0;
+                    $AddMedicine->vat_per_box = $med_VAT ? $med_VAT : 0;
+                    $AddMedicine->mrp_per_box = $med_MRP ? $med_MRP : 0;
+
+                    $AddMedicine->save();
+                }
             }
         endforeach;
         return response()->json(array(
