@@ -600,6 +600,27 @@ class OrderController extends Controller
         ));
     }
 
+    public function purchaseDetailsDelete(Request $request){
+        $orderId = $request->purchase_id;
+        $existing_items = OrderItem::where('order_id', $orderId)->get();
+
+        if(!sizeof($existing_items)){
+
+            $DeleteInfo = Order::find($orderId);
+            $DeleteInfo->delete();
+
+            return response()->json(array(
+                'status' => true,
+                'message' => "Purchase deleted Successfull!",
+            ));
+        }
+
+        return response()->json(array(
+            'status' => false,
+            'message' => "Purchase deleted Successfull!",
+        ));
+    }
+
     public function purchaseItemDetailsDelete(Request $request)
     {
 
@@ -779,7 +800,7 @@ class OrderController extends Controller
                     $InsertProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
 
                     if($item['low_stock_qty']){
-                        $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
+                        $InsertProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
                     }
                 }
                 $InsertProduct->batch_no            = $item['batch_no'];
