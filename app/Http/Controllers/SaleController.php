@@ -300,6 +300,9 @@ class SaleController extends Controller
         if (!empty($data['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $data['invoice'] . '%']), $where);
         }
+        if (!empty($data['medicine_id'])) {
+          $where = array_merge(array(['sale_items.medicine_id', $data['medicine_id']]), $where);
+        }
         if (empty($data['status'])) {
             $where = array_merge(array(['sales.status', '<>', 'CANCEL']), $where);
         }
@@ -312,7 +315,11 @@ class SaleController extends Controller
             $where = array_merge(array([DB::raw('DATE(created_at)'), '>=', $dateRange[0]]), $where);
             $where = array_merge(array([DB::raw('DATE(created_at)'), '<=', $dateRange[1]]), $where);
         }
-        $query = Sale::where($where);
+        $query = Sale::where($where)
+        ->select('sales.id as id', 'sales.customer_name', 'sales.customer_mobile', 'sales.invoice', 'sales.total_payble_amount', 'sales.total_due_amount',
+        'sales.created_at', 'sales.file_name', 'sale_items.medicine_id', 'sale_items.id as item_id')
+        ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id');
+
         $total = $query->count();
         $orders = $query
             ->orderBy('sales.id', 'desc')
