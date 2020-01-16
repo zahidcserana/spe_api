@@ -600,6 +600,27 @@ class OrderController extends Controller
         ));
     }
 
+    public function purchaseDetailsDelete(Request $request){
+        $orderId = $request->purchase_id;
+        $existing_items = OrderItem::where('order_id', $orderId)->get();
+
+        if(!sizeof($existing_items)){
+
+            $DeleteInfo = Order::find($orderId);
+            $DeleteInfo->delete();
+
+            return response()->json(array(
+                'status' => true,
+                'message' => "Purchase deleted Successfull!",
+            ));
+        }
+
+        return response()->json(array(
+            'status' => false,
+            'message' => "Purchase deleted Successfull!",
+        ));
+    }
+
     public function purchaseItemDetailsDelete(Request $request)
     {
 
@@ -779,7 +800,7 @@ class OrderController extends Controller
                     $InsertProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
 
                     if($item['low_stock_qty']){
-                        $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
+                        $InsertProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
                     }
                 }
                 $InsertProduct->batch_no            = $item['batch_no'];
@@ -874,12 +895,16 @@ class OrderController extends Controller
 
     public function masterPurchaseList(Request $request){
 
+        $today = date("Y-m-d");
+        $lastWeek = date("Y-m-d", strtotime("-7 days"));
+
         $data = [];
         $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.discount', 'orders.total_amount', 'orders.total_payble_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name', 'users.name as created_by')
         ->where('orders.status', 'ACCEPTED')
         ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'orders.company_id')
         ->leftjoin('users', 'users.id', '=', 'orders.created_by')
         ->orderBy('id', 'DESC')
+        ->whereBetween('orders.purchase_date', [$lastWeek, $today])
         ->get();
 
         $total_amount = 0;
@@ -1815,19 +1840,29 @@ class OrderController extends Controller
 
     public function productList(Request $request){
         $user = $request->auth;
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
-            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
-            ->get();
+            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id');
+            
+        $total = $inventory->count();
+
+        $inventoryData = $inventory->offset($offset)->limit($limit)->get();
 
         return response()->json(array(
-            'data' => $inventory,
+            'data' => $inventoryData,
             'status' => 'Successful',
-            'message' => 'Inventory List'
+            'message' => 'Inventory List',
+            'total' => $total,
+            'page_no' => $pageNo,
+            'limit' => $limit,
         ));
     }
 
@@ -1904,7 +1939,7 @@ class OrderController extends Controller
 
     public function typeList(Request $request)
     {
-        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'ASC')->get();
+        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'desc')->get();
         return response()->json($typeList);
     }
 
