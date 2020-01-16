@@ -1840,19 +1840,29 @@ class OrderController extends Controller
 
     public function productList(Request $request){
         $user = $request->auth;
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
 
         $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
-            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
-            ->get();
+            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id');
+            
+        $total = $inventory->count();
+
+        $inventoryData = $inventory->offset($offset)->limit($limit)->get();
 
         return response()->json(array(
-            'data' => $inventory,
+            'data' => $inventoryData,
             'status' => 'Successful',
-            'message' => 'Inventory List'
+            'message' => 'Inventory List',
+            'total' => $total,
+            'page_no' => $pageNo,
+            'limit' => $limit,
         ));
     }
 

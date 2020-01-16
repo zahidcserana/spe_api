@@ -100,7 +100,7 @@ class SubscriptionController extends Controller
     //dd(json_encode($data));
 
     curl_setopt_array($curl, array(
-        CURLOPT_URL => "http://127.0.0.1:8090/api/apply-subscription",
+        CURLOPT_URL => "http://43.225.151.252:9898/api/apply-subscription",
         //CURLOPT_URL => "http://103.23.41.189:99/api/subscription-response",
         // CURLOPT_URL => "http://localhost/spe_api/api/subscription-response",
         // CURLOPT_URL => "http://54.214.203.243:91/data_sync",
