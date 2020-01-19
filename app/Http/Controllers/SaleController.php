@@ -579,6 +579,9 @@ class SaleController extends Controller
         if (!empty($query['company'])) {
           $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
         }
+        if (!empty($query['generic'])) {
+          $where = array_merge(array(['medicines.generic_name', 'LIKE', '%' . $query['generic'] . '%']), $where);
+        }
         if (!empty($query['product_id'])) {
           $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
         }
