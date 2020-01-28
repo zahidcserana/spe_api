@@ -47,6 +47,10 @@ class Sale extends Model
         $orderItemModel = new SaleItem();
         $orderItemModel->addItem($orderId, $cartData->id);
 
+        $cartItemModel = new CartItem();
+        $cartItemModel->where('cart_id', $cartData->id)->delete();
+        $cartModel->where('token', $data['token'])->delete();
+
         return ['success' => true, 'message' => 'Data successfully submitted.', 'data' => $this->getOrderDetails($orderId)];
     }
 

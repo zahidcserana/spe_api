@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Medicine;
+use App\Models\CartItem;
 use App\Models\MedicineCompany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,7 +173,15 @@ class MedicineController extends Controller
         ->where('medicine_id', $request->input('medicine_id'))
         ->first();
 
-        return response()->json($product);
+        $cartItem = new CartItem();
+        $cartItem = $cartItem
+            ->select(DB::raw('SUM(quantity) as total_quantity'))
+            ->where('medicine_id', $request->input('medicine_id'))
+            ->first();
+        if($cartItem) {
+          $available = $product->available_quantity - $cartItem->total_quantity;
+        }
+        return response()->json(['available_quantity'=>$available]);
     }
 
     public function searchByCompany(Request $request)

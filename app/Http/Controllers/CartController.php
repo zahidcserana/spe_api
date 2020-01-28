@@ -20,6 +20,9 @@ class CartController extends Controller
             'medicine_id' => 'required',
             'quantity' => 'required'
         ]);
+        if(CartItem::where('medicine_id',$data['medicine_id'])->first()) {
+          return response()->json(['success' => false, 'error' => 'Already added this item!']);
+        }
         $cartModel = new Cart();
         $cart = $cartModel->AddToCart($data, $user);
 
