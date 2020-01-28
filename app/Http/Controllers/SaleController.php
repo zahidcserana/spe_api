@@ -318,9 +318,11 @@ class SaleController extends Controller
         $query = Sale::where($where)
         ->select('sales.id as id', 'sales.customer_name', 'sales.customer_mobile', 'sales.invoice', 'sales.total_payble_amount', 'sales.total_due_amount',
         'sales.created_at', 'sales.file_name', 'sale_items.medicine_id', 'sale_items.id as item_id')
-        ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id');
+        ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+        ->groupBy('sales.id');
 
         $total = $query->count();
+        //return response()->json($query->toSql());
         $orders = $query
             ->orderBy('sales.id', 'desc')
             ->offset($offset)
