@@ -8,6 +8,7 @@ use App\Models\Medicine;
 use App\Models\MedicineCompany;
 use Illuminate\Http\Request;
 use Validator;
+use DB;
 
 class CartController extends Controller
 {
@@ -56,6 +57,15 @@ class CartController extends Controller
     public function quantityUpdate(Request $request)
     {
         $data = $request->all();
+        $item = CartItem::find($data['id'])->first();
+        $product = DB::table('products')
+        ->select(DB::raw('SUM(quantity) as available_quantity'))
+        ->where('medicine_id', $item->medicine_id)
+        ->first();
+
+        if($data['increment'] == 1 && ($product->available_quantity < ($item->quantity + 1))) {
+          return response()->json(['success' => false, 'error' => 'Only ' . $product->available_quantity . ' Pcs is available']);
+        }
         $cartModel = new Cart();
         $cartUpdate = $cartModel->quantityUpdate($data);
 
