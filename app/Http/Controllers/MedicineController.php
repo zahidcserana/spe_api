@@ -120,6 +120,7 @@ class MedicineController extends Controller
         $pharmacyMedicineIds = $openSale ? false : DB::table('inventories')->select('medicine_id')->distinct()->pluck('medicine_id');
 
         $medicines = Medicine::where('brand_name', 'like', $str . '%')
+            ->orWhere('barcode', 'like', $str . '%')
             ->when($pharmacyMedicineIds, function ($query, $pharmacyMedicineIds) {
                    return $query->whereIn('id', $pharmacyMedicineIds);
                })
