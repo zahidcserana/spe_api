@@ -397,7 +397,7 @@ class OrderController extends Controller
 
     public function previousPurchaseDetails(Request $request){
         if($request->medicine_id){
-            $itemDetails = Medicine::select('medicines.pcs_per_box as pieces_per_box', 'medicines.tp_per_box as trade_price', 'medicines.vat_per_box as box_vat', 'medicines.mrp_per_box as mrp', 'products.low_stock_qty')
+            $itemDetails = Medicine::select('medicines.pcs_per_box as pieces_per_box', 'medicines.tp_per_box as trade_price', 'medicines.vat_per_box as box_vat', 'medicines.mrp_per_box as mrp', 'medicines.barcode', 'products.low_stock_qty')
             ->where('medicines.id', $request->medicine_id)
             ->leftjoin('products', 'products.medicine_id', '=', 'medicines.id')
             ->first();
@@ -764,6 +764,9 @@ class OrderController extends Controller
                 $UpdateMedicine->tp_per_box  = $item['box_trade_price'] ? $item['box_trade_price'] : 0;
                 $UpdateMedicine->vat_per_box = $item['box_vat'] ? $item['box_vat'] : 0;
                 $UpdateMedicine->mrp_per_box = $item['box_mrp'] ? $item['box_mrp'] : 0;
+                if($item['bar_code']){
+                    $UpdateMedicine->barcode = $item['bar_code'] ? $item['bar_code'] : '';
+                }
                 $UpdateMedicine->save();
             }
 
