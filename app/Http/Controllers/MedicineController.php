@@ -100,6 +100,7 @@ class MedicineController extends Controller
         $company_id =  $companyData ? $companyData->id : 0;
 
         $medicines = Medicine::where('brand_name', 'like', $str . '%')
+            ->orWhere('barcode', 'like', $str . '%')
             ->when($company_id, function ($query, $company_id) {
                 return $query->where('company_id', $company_id);
             })

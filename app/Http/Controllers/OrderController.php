@@ -1304,7 +1304,7 @@ class OrderController extends Controller
             'status'
             )->where('id', $order_id)->get();
 
-            $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'order_items.order_id as item_order_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
+            $orderItems = OrderItem::select('order_items.id as item_id', 'order_items.medicine_id', 'order_items.order_id as item_order_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicines.barcode', 'medicine_types.name as medicine_type', 'order_items.company_id', 'medicine_companies.company_name', 'order_items.quantity',
                 'order_items.exp_date', 'order_items.batch_no', 'order_items.unit_price', 'order_items.total', 'order_items.pieces_per_box', 'order_items.mrp', 'order_items.trade_price', 'order_items.box_vat')
                 ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
                 ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
@@ -1848,7 +1848,7 @@ class OrderController extends Controller
         $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
 
-        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicines.barcode', 'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
@@ -1960,7 +1960,7 @@ class OrderController extends Controller
         $generic =  $decode_filter['generic'] ?? 0;
         $low_stock_qty = $decode_filter['low_stock_qty'];
 
-        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic',  'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
+        $inventory = Product::select('products.id', 'products.quantity', 'products.mrp', 'products.tp', 'products.medicine_id', 'products.pharmacy_branch_id', 'medicines.brand_name as medicine_name', 'medicines.generic_name as generic', 'medicines.barcode', 'medicines.strength', 'medicine_types.name as medicine_type', 'products.company_id', 'products.low_stock_qty', 'medicine_companies.company_name')
             ->orderBy('medicines.brand_name', 'ASC')
             ->where('products.pharmacy_branch_id', $user->pharmacy_branch_id)
             ->when($company, function ($query, $company) {
