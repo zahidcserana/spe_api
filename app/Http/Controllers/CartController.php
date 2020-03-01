@@ -21,7 +21,8 @@ class CartController extends Controller
             'medicine_id' => 'required',
             'quantity' => 'required'
         ]);
-        if(CartItem::where('medicine_id',$data['medicine_id'])->first()) {
+        $cart = Cart::where('token', $data['token'])->first();
+        if($cart && CartItem::where('medicine_id',$data['medicine_id'])->where('cart_id', $cart->id)->first()) {
           return response()->json(['success' => false, 'error' => 'Already added this item!']);
         }
         $cartModel = new Cart();
