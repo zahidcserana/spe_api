@@ -612,18 +612,17 @@ class SaleController extends Controller
             'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type','medicine_companies.company_name as medicine_company')
             ->orderBy('sales.id', 'desc')
             ->get();
-
         $result = array();
         foreach ($orders as $element) {
             $result[$element['sale_id']][] = $element;
         }
-
         $array = array();
         $sum_total_profit = 0;
         $sum_sale_amount = 0;
         $sum_sale_discount = 0;
         $sum_grand_total = 0;
         $sum_sale_due = 0;
+        $sum_quantity = 0;
 
         foreach ($result as $i=>$item) {
           $items = array();
@@ -642,12 +641,12 @@ class SaleController extends Controller
                 'sale_due' => $aItem->sale_due,
                 'grand_total' => $aItem->total_payble_amount
               );
-
               $sum_sale_amount += $aItem->sale_amount;
               $sum_sale_discount += $aItem->sale_discount;
               $sum_grand_total += $aItem->total_payble_amount;
               $sum_sale_due += $aItem->sale_due;
             }
+            $sum_quantity += $aItem->quantity;
             $sub_tp = $aItem->tp * $aItem->quantity;
             $profit = $aItem->sub_total - $sub_tp;
             $total_profit += $profit;
@@ -668,22 +667,45 @@ class SaleController extends Controller
 
           $array[] = $saleData;
         }
-
         $sammary = array(
           'sum_total_profit' => $sum_total_profit,
           'sum_sale_amount' => $sum_sale_amount,
           'sum_sale_discount' => $sum_sale_discount,
           'sum_grand_total' => $sum_grand_total,
           'sum_sale_due' => $sum_sale_due,
+          'sum_quantity' => $sum_quantity,
         );
-
         $data = array(
             'data' => $array,
             'summary' => $sammary,
         );
-
         return response()->json($data);
     }
+
+    public function summary($where)
+    {
+        $model = new Sale();
+        $model = $model
+            ->select(DB::raw('
+              SUM(sub_total) as t_sub_total,
+              SUM(discount) as t_discount,
+              SUM(total_payble_amount) as t_payble_amount,
+              SUM(total_due_amount) as t_due_amount,
+              SUM(quantity) as t_quantity
+              '))
+            ->where($where)
+            ->first();
+        $data = array(
+            'sub_total' => $model->t_sub_total,
+            'discount' => $model->t_discount,
+            'payble_amount' => $model->t_payble_amount,
+            'due_amount' => $model->t_due_amount,
+            'quantity' => $model->t_quantity,
+        );
+
+        return $data;
+    }
+
   /*
     public function statusUpdate(Request $request)
     {

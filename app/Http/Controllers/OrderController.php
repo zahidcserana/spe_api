@@ -1854,7 +1854,7 @@ class OrderController extends Controller
             ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
             ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id');
-            
+
         $total = $inventory->count();
 
         $inventoryData = $inventory->offset($offset)->limit($limit)->get();
@@ -1942,7 +1942,7 @@ class OrderController extends Controller
 
     public function typeList(Request $request)
     {
-        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'desc')->get();
+        $typeList = MedicineType::select('id', 'name')->orderBy('name', 'asc')->get();
         return response()->json($typeList);
     }
 
