@@ -9,6 +9,7 @@ use Firebase\JWT\ExpiredException;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Lumen\Routing\Controller;
 use App\Models\User;
+use App\Models\PharmacyBranch;
 
 class AuthController extends Controller
 {
@@ -50,7 +51,7 @@ class AuthController extends Controller
 
         // Verify the password and generate the token
         if (Hash::check($this->request->password, $user->password)) {
-
+            $config = PharmacyBranch::find($user->pharmacy_branch_id);
             return response()->json([
                 'status' => 200,
                 'message' => 'Login Successful',
@@ -59,6 +60,7 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'user_type' => $user->user_type,
                     'pos_version' => $user->pos_version ?? 1,
+                    'config' => !empty($config->branch_config) ? json_decode($config->branch_config, true) : [] 
                 ]
             ], 200);
         }
