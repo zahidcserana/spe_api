@@ -746,6 +746,7 @@ class OrderController extends Controller
             $itemSave->medicine_id      = $item['medicine_id'];
             $itemSave->company_id       = $company_id;
             $itemSave->quantity         = $item['quantity'];
+            $itemSave->free_qty         = $item['free_qty'] ?? 0;
             $itemSave->order_id         = $OrderId;
             $itemSave->exp_date         = $exp_date;
             $itemSave->batch_no         = $item['batch_no'];
@@ -773,12 +774,13 @@ class OrderController extends Controller
             $per_item_vat = ($item['box_trade_price'] + $item['box_vat'])/$item['piece_per_box'];
 
             $isProcuctExist = Product::where('medicine_id', $medicine_id)->get();
-            if(sizeof($isProcuctExist))
-            {
+            $free_qty = !empty($item['free_qty']) ? ($item['free_qty'] * $item['piece_per_box']) : 0;
+            if(sizeof($isProcuctExist)) {
                 $procuctId = $isProcuctExist[0]->id;
 
                 $UpdateProduct = Product::find($procuctId);
-                $UpdateProduct->quantity            = $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
+
+                $UpdateProduct->quantity            = $free_qty + $UpdateProduct->quantity + ($item['quantity'] * $item['piece_per_box']);
                 if($item['update_price']){
                     $UpdateProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
                     $UpdateProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
@@ -786,18 +788,15 @@ class OrderController extends Controller
                     if($item['low_stock_qty']){
                         $UpdateProduct->low_stock_qty   = $item['low_stock_qty'] ? $item['low_stock_qty'] : 0;
                     }
-
                 }
                 $UpdateProduct->batch_no            = $item['batch_no'];
                 $UpdateProduct->company_id          = $company_id ? $company_id : 0;
                 $UpdateProduct->pharmacy_branch_id  = $user->pharmacy_branch_id;
                 $UpdateProduct->save();
-            }
-            else
-            {
+            } else {
                 $InsertProduct = new Product();
                 $InsertProduct->medicine_id         = $medicine_id;
-                $InsertProduct->quantity            = $item['quantity'] * $item['piece_per_box'];
+                $InsertProduct->quantity            = $free_qty + ($item['quantity'] * $item['piece_per_box']);
                 if($item['update_price']){
                     $InsertProduct->mrp             = $item['box_mrp']/$item['piece_per_box'];
                     $InsertProduct->tp              = $per_item_vat ? $per_item_vat : 0.00;
