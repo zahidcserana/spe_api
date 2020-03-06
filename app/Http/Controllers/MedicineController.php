@@ -26,6 +26,9 @@ class MedicineController extends Controller
       if (!empty($data['company_id'])) {
           $where = array_merge(array(['order_items.company_id', $data['company_id']]), $where);
       }
+      if (!empty($data['exp_type'])) {
+            $where = $this->_getExpType($where, $data['exp_type']);
+      }
       if (!empty($data['expiry_date'])) {
           $dateRange = explode(',',$data['expiry_date']);
           // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
@@ -60,6 +63,31 @@ class MedicineController extends Controller
       return response()->json($data);
     }
 
+    private function _getExpType($where, $expTpe)
+    {
+        $today = date('Y-m-d');
+        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+        if ($expTpe == 2) {
+            $where = array_merge(array(
+                ['order_items.exp_date', '>', $today],
+                ['order_items.exp_date', '<', $exp1M]
+            ), $where);
+        } else if ($expTpe == 3) {
+            $where = array_merge(array(
+                ['order_items.exp_date', '>', $today],
+                ['order_items.exp_date', '<', $exp3M]
+            ), $where);
+        } else if ($expTpe == 1) {
+            $where = array_merge(array(
+                ['order_items.exp_date', '>', $exp3M]
+            ), $where);
+        } else if ($expTpe == 4) {
+            $where = array_merge(array(['order_items.exp_date', '<', $today]), $where);
+        }
+        return $where;
+    }
+
     private function _getExpStatus($date)
     {
         $expDate = date("F, Y", strtotime($date));
@@ -85,7 +113,7 @@ class MedicineController extends Controller
         if ($date < $today) {
             return 'EXPIRED';
         } else if ($date <= $exp3M) {
-            return 'EXPIRED SOON';
+            return 'EXPIRED IN 3 MONTH';
         } else {
             return 'VALID';
         }
