@@ -640,6 +640,7 @@ class HomeController extends Controller
         $notifications = Notification::select('notifications.id', 'notifications.category', 'notifications.details', 'notifications.notification_date', 'notifications.is_read', 'notifications.importance', 'medicines.brand_name')
         ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
         ->orderby('notifications.id', 'DESC')
+        ->take(150)
         ->get();
 
         return response()->json(array(
