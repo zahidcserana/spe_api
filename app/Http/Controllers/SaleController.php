@@ -490,6 +490,7 @@ class SaleController extends Controller
         $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
         $where = array();
+        $dateRangeData = '';
         $user = $request->auth;
         $where = array_merge(array(['sales.status', 'DUE']), $where);
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
@@ -506,11 +507,13 @@ class SaleController extends Controller
             $dateRange = explode(',',$data['sale_date']);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
         }else{
           $today = date('Y-m-d');
           $lastMonth = date("Y-m-d",strtotime("-1 month"));
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
         }
         $query = Sale::where($where)
         ->orWhere('due_log', '<>', null)
@@ -546,6 +549,7 @@ class SaleController extends Controller
           'sum_sale_amount' => $sum_sale_amount,
           'total_advance_amount' => $sum_advance_amount,
           'sum_sale_due' => $sum_sale_due,
+          'dateRangeData' => $dateRangeData,
         );
 
         $data = array(
@@ -566,6 +570,7 @@ class SaleController extends Controller
         $where = array();
         $user = $request->auth;
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        $dateRangeData = '';
 
         if (!empty($query['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
@@ -595,11 +600,13 @@ class SaleController extends Controller
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
             }
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
         }else{
           $today = date('Y-m-d');
           $lastMonth = date("Y-m-d",strtotime("-1 month"));
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
         }
         if (!empty($query['company'])) {
           $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
@@ -698,6 +705,7 @@ class SaleController extends Controller
           'sum_grand_total' => $sum_grand_total,
           'sum_sale_due' => $sum_sale_due,
           'sum_quantity' => $sum_quantity,
+          'dateRangeData' => $dateRangeData,
         );
         $data = array(
             'data' => $array,
@@ -715,6 +723,7 @@ class SaleController extends Controller
         $offset = (($pageNo - 1) * $limit);
         $where = array();
         $user = $request->auth;
+        $dateRangeData = '';
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
 
         if (!empty($query['invoice'])) {
@@ -745,11 +754,13 @@ class SaleController extends Controller
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
             }
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
         }else{
           $today = date('Y-m-d');
           $lastMonth = date("Y-m-d",strtotime("-1 month"));
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
         }
         if (!empty($query['company'])) {
           $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
@@ -851,6 +862,7 @@ class SaleController extends Controller
           'sum_grand_total' => $sum_grand_total,
           'sum_sale_due' => $sum_sale_due,
           'sum_quantity' => $sum_quantity,
+          'dateRangeData' => $dateRangeData,
         );
         $data = array(
             'data' => $array,
