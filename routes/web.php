@@ -49,6 +49,7 @@ $router->group(['prefix' => 'api'],
                 /** Dashboard */
                 $router->get('dashboard/summary', ['uses' => 'DashboardController@summary']);
                 $router->get('dashboard/statistics', ['uses' => 'DashboardController@getStatistics']);
+                $router->get('expired/medicines', ['uses' => 'MedicineController@getExpiryMedicine']);
 
                 /** Medicine */
                 $router->get('medicines/expired-date', ['uses' => 'MedicineController@medicineWithExpiredDate']);

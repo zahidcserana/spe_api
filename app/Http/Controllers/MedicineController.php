@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sale;
+use App\Models\Order;
 use App\Models\Medicine;
 use App\Models\CartItem;
-use App\Models\MedicineCompany;
+use App\Models\SaleItem;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use App\Models\MedicineCompany;
 use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
@@ -61,6 +65,34 @@ class MedicineController extends Controller
           'limit' => $limit,
       );
       return response()->json($data);
+    }
+
+    public function getExpiryMedicine(){
+        $today = date('Y-m-d');
+        $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
+        $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
+        
+        $medicine_list = OrderItem::where('exp_date', '<>' ,'1970-01-01')->get();
+
+        $all_expired = $medicine_list->where('exp_date', '<', date('Y-m-d'))->count();
+        $expired_one_month = $medicine_list->where('exp_date', '>', date('Y-m-d'))->where('exp_date', '<', $exp1M)->count();
+        $expired_three_month = OrderItem::where('exp_date', '>', $exp1M)->where('exp_date', '<', $exp3M)->get()->count();
+
+        $all_sell_item = SaleItem::select('sale_items.medicine_id', 'sale_items.quantity', 'sale_items.company_id', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength')
+        ->leftjoin('medicines', 'medicines.id', '=', 'sale_items.medicine_id')
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
+        ->groupBy('sale_items.medicine_id')
+        ->orderBy('sale_items.quantity', 'DESC')
+        ->get();
+
+        $data = array(
+            'sale_details' => $all_sell_item->take(5),
+            'total_expired' => $all_expired,
+            'total_expired_one_month' => $expired_one_month,
+            'total_expired_three_month' => $expired_three_month
+        );
+
+        return response()->json($data);
     }
 
     private function _getExpType($where, $expTpe)
