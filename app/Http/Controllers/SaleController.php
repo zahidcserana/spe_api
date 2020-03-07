@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\OrderItem;
 use App\Models\SaleItem;
 use App\Models\CartItem;
+use App\Models\PaymentType;
 use Barryvdh\DomPDF\PDF;
 use DateTime;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class SaleController extends Controller
 
         return $pdf->download('order.pdf');
     }
+
     public function _dueLog($itemData, $data){
       $dueLog = array();
       $dueLog = json_decode($itemData->due_log ,true);
@@ -41,6 +43,13 @@ class SaleController extends Controller
       $dueLog[] = $data;
       return $dueLog;
     }
+
+    public function paymentTypes(Request $request) {
+      $user = $request->auth;
+      $paymentTypes = PaymentType::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+      return response()->json($paymentTypes);
+    }
+
     public function payout(Request $request)
     {
         $user = $request->auth;
