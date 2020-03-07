@@ -120,6 +120,7 @@ $router->group(['prefix' => 'api'],
                 $router->post('purchase/item/delete', ['uses' => 'OrderController@purchaseItemDetailsDelete']);
 
                 $router->post('purchase/previous/details', ['uses' => 'OrderController@previousPurchaseDetails']);
+                $router->post('item/unit/details', ['uses' => 'OrderController@medicineUnitPriceDetails']);
                 //purchase/list
                 $router->get('purchase/list', ['uses' => 'OrderController@purchaseList']);
                 $router->get('master/purchase/list', ['uses' => 'OrderController@masterPurchaseList']);

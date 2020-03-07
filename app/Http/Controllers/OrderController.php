@@ -408,6 +408,19 @@ class OrderController extends Controller
         ));
     }
 
+    public function medicineUnitPriceDetails(Request $request){
+        if($request->medicine_id){
+            $itemDetails = Medicine::select('medicines.pcs_per_box as pieces_per_box', 'medicines.tp_per_box as trade_price', 'medicines.vat_per_box as box_vat', 'medicines.mrp_per_box as mrp', 'medicines.barcode', 'products.low_stock_qty')
+            ->where('medicines.id', $request->medicine_id)
+            ->leftjoin('products', 'products.medicine_id', '=', 'medicines.id')
+            ->first();
+        }
+        return response()->json(array(
+            'data' => $itemDetails,
+            'message' => "Product Listed Successful!",
+        ));
+    }
+
     public function purchaseDueSave(Request $request)
     {
         $details = $request->details;
