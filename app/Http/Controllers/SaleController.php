@@ -441,6 +441,9 @@ class SaleController extends Controller
         $data['updated_at'] = date('Y-m-d H:i:s');
         $data['updated_by'] = $user->id;
         $itemData = SaleItem::where('id', $data['item_id'])->first();
+        if($itemData->quantity == $data['new_quantity'] || $data['new_quantity'] == 0 || $data['new_quantity'] > $itemData->quantity) {
+          return response()->json(['success' => false, 'data' => []]);
+        }
         $saleData = Sale::where('id', $itemData->sale_id)->first();
 
         $changeLog = $this->_changeLog($itemData, $data);
@@ -454,7 +457,8 @@ class SaleController extends Controller
           'change_log' => json_encode($changeLog),
           'updated_at' => $data['updated_at'],
           'updated_by' => $data['updated_by'],
-          'return_status' => 'CHANGE'
+          'return_status' => 'CHANGE',
+          'refund_quantity' => $itemData->refund_quantity + ($itemData->quantity - $data['new_quantity'])
         );
         $saleModel = new Sale();
 
@@ -486,6 +490,7 @@ class SaleController extends Controller
         $limit = $request->query('limit') ?? 500;
         $offset = (($pageNo - 1) * $limit);
         $where = array();
+        $dateRangeData = '';
         $user = $request->auth;
         $where = array_merge(array(['sales.status', 'DUE']), $where);
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
@@ -502,11 +507,13 @@ class SaleController extends Controller
             $dateRange = explode(',',$data['sale_date']);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
             $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
         }else{
           $today = date('Y-m-d');
           $lastMonth = date("Y-m-d",strtotime("-1 month"));
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
         }
         $query = Sale::where($where)
         ->orWhere('due_log', '<>', null)
@@ -542,6 +549,7 @@ class SaleController extends Controller
           'sum_sale_amount' => $sum_sale_amount,
           'total_advance_amount' => $sum_advance_amount,
           'sum_sale_due' => $sum_sale_due,
+          'dateRangeData' => $dateRangeData,
         );
 
         $data = array(
@@ -562,6 +570,7 @@ class SaleController extends Controller
         $where = array();
         $user = $request->auth;
         $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        $dateRangeData = '';
 
         if (!empty($query['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
@@ -591,11 +600,13 @@ class SaleController extends Controller
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
               $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
             }
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
         }else{
           $today = date('Y-m-d');
           $lastMonth = date("Y-m-d",strtotime("-1 month"));
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
           $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
         }
         if (!empty($query['company'])) {
           $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
@@ -694,6 +705,164 @@ class SaleController extends Controller
           'sum_grand_total' => $sum_grand_total,
           'sum_sale_due' => $sum_sale_due,
           'sum_quantity' => $sum_quantity,
+          'dateRangeData' => $dateRangeData,
+        );
+        $data = array(
+            'data' => $array,
+            'summary' => $sammary,
+        );
+        return response()->json($data);
+    }
+
+    public function saleReturnReport(Request $request)
+    {
+        $query = $request->query();
+
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 1000;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        $dateRangeData = '';
+        $where = array_merge(array(['sales.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+
+        if (!empty($query['invoice'])) {
+            $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
+        }
+        if (!empty($query['payment_type'])) {
+            $where = array_merge(array(['sales.payment_type', 'LIKE', '%' . $query['payment_type'] . '%']), $where);
+        }
+
+        if (!empty($query['sales_man_name'])) {
+            $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man_name'] . '%']), $where);
+        }
+        if (!empty($query['sales_man'])) {
+            $where = array_merge(array(['users.id', $query['sales_man']]), $where);
+        }
+        // if (!empty($query['user_id'])) {
+        //     $where = array_merge(array(['users.id', $query['user_id']]), $where);
+        // }
+        if (!empty($query['sale_date'])) {
+            $dateRange = explode(',',$query['sale_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            if (!empty($query['start_time']) && !empty($query['start_time'])) {
+              $start = $dateRange[0] . ' ' . $query['start_time'] . ':00' . ':00';
+              $end = $dateRange[0] . ' ' . $query['end_time'] . ':00' . ':00';
+              $where = array_merge(array(['sales.created_at', '>=', $start]), $where);
+              $where = array_merge(array(['sales.created_at', '<=', $end]), $where);
+            } else {
+              $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $dateRange[0]]), $where);
+              $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $dateRange[1]]), $where);
+            }
+            $dateRangeData = $dateRange[0] . ' - ' . $dateRange[1];
+        }else{
+          $today = date('Y-m-d');
+          $lastMonth = date("Y-m-d",strtotime("-1 month"));
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '>=', $lastMonth]), $where);
+          $where = array_merge(array([DB::raw('DATE(sales.created_at)'), '<=', $today]), $where);
+          $dateRangeData = $lastMonth . ' - ' . $today;
+        }
+        if (!empty($query['company'])) {
+          $where = array_merge(array(['medicine_companies.company_name', 'LIKE', '%' . $query['company'] . '%']), $where);
+        }
+        if (!empty($query['generic'])) {
+          $where = array_merge(array(['medicines.generic_name', 'LIKE', '%' . $query['generic'] . '%']), $where);
+        }
+        if (!empty($query['product_id'])) {
+          $where = array_merge(array(['sale_items.medicine_id', $query['product_id']]), $where);
+        }
+        if (!empty($query['product_type_id'])) {
+          $where = array_merge(array(['sale_items.product_type', $query['product_type_id']]), $where);
+        }
+        if (!empty($query['customer_mobile'])) {
+            $where = array_merge(array(['sales.customer_mobile', 'LIKE', '%' . $query['customer_mobile'] . '%']), $where);
+        }
+        if (!empty($query['customer_name'])) {
+            $where = array_merge(array(['sales.customer_name', 'LIKE', '%' . $query['customer_name'] . '%']), $where);
+        }
+
+        $query = Sale::where($where)
+            ->whereIn('sale_items.return_status', ['RETURN', 'CHANGE'])
+            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('medicine_companies', 'sale_items.company_id', '=', 'medicine_companies.id')
+            ->join('medicines', 'sale_items.medicine_id', '=', 'medicines.id')
+            ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
+            ->join('users', 'sales.created_by', '=', 'users.id');
+
+        $total = $query->count();
+        $orders = $query
+            ->select('sales.created_at as sale_date','sales.payment_type','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount',
+            'sales.total_due_amount as sale_due','sales.customer_name','sales.customer_mobile',
+            'sale_items.id as item_id','sale_items.medicine_id','sale_items.refund_quantity','sale_items.quantity','sale_items.change_log','sale_items.sub_total','sale_items.unit_price as mrp','sale_items.tp',
+            'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type','medicine_companies.company_name as medicine_company')
+            ->orderBy('sales.id', 'desc')
+            ->get();
+        $result = array();
+        foreach ($orders as $element) {
+            $result[$element['sale_id']][] = $element;
+        }
+        $array = array();
+        $sum_total_profit = 0;
+        $sum_sale_amount = 0;
+        $sum_sale_discount = 0;
+        $sum_grand_total = 0;
+        $sum_sale_due = 0;
+        $sum_quantity = 0;
+
+        foreach ($result as $i=>$item) {
+          $items = array();
+          $t = 0;
+          $total_profit = 0;
+          foreach ($item as $aItem) {
+            if($t == 0) {
+              $saleData = array(
+                'sale_id' => $i,
+                'invoice' => $aItem->invoice,
+                'payment_type' => $aItem->payment_type,
+                'sale_date' => $aItem->sale_date,
+                'sales_man' => $aItem->name,
+                'customer' => ['name'=>$aItem->customer_name,'mobile'=>$aItem->customer_mobile],
+                'sale_amount' => $aItem->sale_amount,
+                'sale_discount' => $aItem->sale_discount,
+                'sale_due' => $aItem->sale_due,
+                'grand_total' => $aItem->total_payble_amount
+              );
+              $sum_sale_amount += $aItem->sale_amount;
+              $sum_sale_discount += $aItem->sale_discount;
+              $sum_grand_total += $aItem->total_payble_amount;
+              $sum_sale_due += $aItem->sale_due;
+            }
+            $sum_quantity += $aItem->quantity;
+            $sub_tp = $aItem->tp * $aItem->quantity;
+            $profit = $aItem->sub_total - $sub_tp;
+            $total_profit += $profit;
+            $aData = array();
+            $aData['medicine'] = ['id'=>$aItem->medicine_id, 'company'=>$aItem->medicine_company, 'name'=>$aItem->brand_name, 'strength'=>$aItem->strength, 'type'=> substr($aItem->medicine_type, 0, 3)];
+            $aData['quantity'] = $aItem->quantity;
+            $aData['mrp'] = $aItem->mrp;
+            $aData['tp'] = $aItem->tp;
+            $aData['sub_tp'] = $sub_tp;
+            $aData['profit'] = $profit;
+            $aData['sub_total'] = $aItem->sub_total;
+            $aData['refund_quantity'] = $aItem->refund_quantity;
+            $aData['change_log'] = !empty($aItem->change_log) ? json_decode($aItem->change_log, true) : [];
+            $items[] = $aData;
+            $t++;
+          }
+          $sum_total_profit += $total_profit;
+          $saleData['total_profit'] = $total_profit;
+          $saleData['item'] = $items;
+
+          $array[] = $saleData;
+        }
+        $sammary = array(
+          'sum_total_profit' => $sum_total_profit,
+          'sum_sale_amount' => $sum_sale_amount,
+          'sum_sale_discount' => $sum_sale_discount,
+          'sum_grand_total' => $sum_grand_total,
+          'sum_sale_due' => $sum_sale_due,
+          'sum_quantity' => $sum_quantity,
+          'dateRangeData' => $dateRangeData,
         );
         $data = array(
             'data' => $array,

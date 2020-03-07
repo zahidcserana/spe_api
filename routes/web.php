@@ -70,6 +70,7 @@ $router->group(['prefix' => 'api'],
 
                 /** Report Sale */
                 $router->get('sale/report', ['uses' => 'SaleController@saleReport']);
+                $router->get('sale/return/report', ['uses' => 'SaleController@saleReturnReport']);
                 $router->get('sale/due/report', ['uses' => 'SaleController@saleDueReport']);
                 $router->get('payment/types', ['uses' => 'SaleController@paymentTypes']);
 
