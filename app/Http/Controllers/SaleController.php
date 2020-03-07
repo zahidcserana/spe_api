@@ -46,7 +46,7 @@ class SaleController extends Controller
 
     public function paymentTypes(Request $request) {
       $user = $request->auth;
-      $paymentTypes = PaymentType::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+      $paymentTypes = PaymentType::select('id', 'name')->where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
       return response()->json($paymentTypes);
     }
 
@@ -566,6 +566,9 @@ class SaleController extends Controller
         if (!empty($query['invoice'])) {
             $where = array_merge(array(['sales.invoice', 'LIKE', '%' . $query['invoice'] . '%']), $where);
         }
+        if (!empty($query['payment_type'])) {
+            $where = array_merge(array(['sales.payment_type', 'LIKE', '%' . $query['payment_type'] . '%']), $where);
+        }
 
         if (!empty($query['sales_man_name'])) {
             $where = array_merge(array(['users.name', 'LIKE', '%' . $query['sales_man_name'] . '%']), $where);
@@ -622,7 +625,7 @@ class SaleController extends Controller
 
         $total = $query->count();
         $orders = $query
-            ->select('sales.created_at as sale_date','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount',
+            ->select('sales.created_at as sale_date','sales.payment_type','sales.id as sale_id','sales.invoice','sales.sub_total as sale_amount','sales.total_payble_amount','sales.discount as sale_discount',
             'sales.total_due_amount as sale_due','sales.customer_name','sales.customer_mobile',
             'sale_items.id as item_id','sale_items.medicine_id','sale_items.quantity','sale_items.sub_total','sale_items.unit_price as mrp','sale_items.tp',
             'users.name','users.user_mobile','medicines.company_id as company_id','medicines.brand_name','medicines.strength','medicine_types.name as medicine_type','medicine_companies.company_name as medicine_company')
@@ -649,6 +652,7 @@ class SaleController extends Controller
               $saleData = array(
                 'sale_id' => $i,
                 'invoice' => $aItem->invoice,
+                'payment_type' => $aItem->payment_type,
                 'sale_date' => $aItem->sale_date,
                 'sales_man' => $aItem->name,
                 'customer' => ['name'=>$aItem->customer_name,'mobile'=>$aItem->customer_mobile],

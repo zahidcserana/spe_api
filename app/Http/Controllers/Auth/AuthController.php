@@ -58,9 +58,10 @@ class AuthController extends Controller
                 'data' => [
                     'token' => $this->jwt($user),
                     'email' => $user->email,
+                    'id' => $user->id,
                     'user_type' => $user->user_type,
                     'pos_version' => $user->pos_version ?? 1,
-                    'config' => !empty($config->branch_config) ? json_decode($config->branch_config, true) : [] 
+                    'config' => !empty($config->branch_config) ? json_decode($config->branch_config, true) : []
                 ]
             ], 200);
         }
