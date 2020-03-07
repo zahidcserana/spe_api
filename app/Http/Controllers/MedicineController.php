@@ -78,14 +78,22 @@ class MedicineController extends Controller
         $expired_one_month = $medicine_list->where('exp_date', '>', date('Y-m-d'))->where('exp_date', '<', $exp1M)->count();
         $expired_three_month = OrderItem::where('exp_date', '>', $exp1M)->where('exp_date', '<', $exp3M)->get()->count();
 
-        $all_sell_item = SaleItem::select('sale_items.medicine_id', 'sale_items.quantity', 'sale_items.company_id', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength')
+        $all_expired_list = OrderItem::select('order_items.exp_date', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength')
+        ->where('order_items.exp_date', '<>' ,'1970-01-01')
+        ->where('order_items.exp_date', '<', date('Y-m-d'))
+        ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
+        ->get();
+
+        $all_sell_item = SaleItem::select('sale_items.medicine_id', 'sale_items.company_id', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength', DB::raw('SUM(sale_items.quantity) as quantity'))
         ->leftjoin('medicines', 'medicines.id', '=', 'sale_items.medicine_id')
         ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
         ->groupBy('sale_items.medicine_id')
-        ->orderBy('sale_items.quantity', 'DESC')
+        ->orderBy('quantity', 'DESC')
         ->get();
 
         $data = array(
+            'expired_list' => $all_expired_list->take(5),
             'sale_details' => $all_sell_item->take(5),
             'total_expired' => $all_expired,
             'total_expired_one_month' => $expired_one_month,
