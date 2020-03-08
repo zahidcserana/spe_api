@@ -909,9 +909,12 @@ class OrderController extends Controller
     }
 
     public function masterPurchaseList(Request $request){
+      $dateRangeData = '';
 
         $today = date("Y-m-d");
         $lastWeek = date("Y-m-d", strtotime("-7 days"));
+
+        $dateRangeData = $lastWeek . ' - ' . $today;
 
         $data = [];
         $orders = Order::select('orders.id', 'orders.invoice', 'orders.purchase_date', 'orders.status', 'orders.discount', 'orders.total_amount', 'orders.total_payble_amount', 'orders.total_advance_amount', 'orders.total_due_amount', 'medicine_companies.company_name', 'users.name as created_by')
@@ -954,7 +957,7 @@ class OrderController extends Controller
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
         endforeach;
 
-        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'total_due' => $total_due);
+        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'total_due' => $total_due,'dateRangeData' => $dateRangeData);
 
         return response()->json(array(
             'data' => $data,
@@ -975,6 +978,8 @@ class OrderController extends Controller
         $sales_man = $details['sales_man'] ? $details['sales_man'] : 0;
         $product = $details['product'];
         $medicine_id = 0;
+        $dateRangeData = '';
+        $dateRangeData = $start_date . ' - ' . $end_date;
 
         if($product){
             $medicine_id = $details['medicine_id'];
@@ -1065,7 +1070,7 @@ class OrderController extends Controller
             $data[] = array('invoice' => $order->invoice, 'purchase_date' => $order->purchase_date, 'created_by' => $order->created_by, 'discount' => $order->discount, 'total_amount' => $order->total_amount, 'total_payble_amount' => $order->total_payble_amount, 'total_advance_amount' => $order->total_advance_amount, 'total_due_amount' => $order->total_due_amount, 'company_name' => $order->company_name, 'items' => $itemList);
         endforeach;
 
-        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'total_due' => $total_due);
+        $summary = array('total_amount' => $total_amount, 'total_discount' => $total_discount, 'dateRangeData' => $dateRangeData,'total_due' => $total_due);
 
         return response()->json(array(
             'data' => $data,
