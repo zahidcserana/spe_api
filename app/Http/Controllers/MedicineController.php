@@ -92,7 +92,14 @@ class MedicineController extends Controller
         ->orderBy('quantity', 'DESC')
         ->get();
 
+        $top_company = SaleItem::select('sale_items.company_id', 'medicine_companies.company_name', DB::raw('SUM(sale_items.sub_total) as amount'))
+        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
+        ->groupBy('sale_items.company_id')
+        ->orderBy('amount', 'DESC')
+        ->get();
+
         $data = array(
+            'top_company' => $top_company->take(5),
             'expired_list' => $all_expired_list->take(5),
             'sale_details' => $all_sell_item->take(5),
             'total_expired' => $all_expired,
