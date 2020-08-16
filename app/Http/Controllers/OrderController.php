@@ -1872,6 +1872,9 @@ class OrderController extends Controller
             ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
             ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id');
 
+        $summary['total_mrp'] = $inventory->sum('products.mrp');
+        $summary['total_tp'] = $inventory->sum('products.tp');
+        $summary['total_profit'] = $summary['total_mrp'] - $summary['total_tp'];
         $total = $inventory->count();
 
         $inventoryData = $inventory->offset($offset)->limit($limit)->get();
@@ -1879,6 +1882,7 @@ class OrderController extends Controller
         return response()->json(array(
             'data' => $inventoryData,
             'status' => 'Successful',
+            'summary' => $summary,
             'message' => 'Inventory List',
             'total' => $total,
             'page_no' => $pageNo,
@@ -1995,16 +1999,22 @@ class OrderController extends Controller
             ->when($generic, function ($query, $generic) {
                 return $query->where('medicines.generic_name', 'like', $generic . '%');
             });
-            if ($low_stock_qty) {
-                $inventory = $inventory->whereRaw('products.quantity < products.low_stock_qty');
-            }
-            $inventory = $inventory->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
-            ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
-            ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
-            ->get();
+        
+        $summary['total_mrp'] = $inventory->sum('products.mrp');
+        $summary['total_tp'] = $inventory->sum('products.tp');
+        $summary['total_profit'] = $summary['total_mrp'] - $summary['total_tp'];
+
+        if ($low_stock_qty) {
+            $inventory = $inventory->whereRaw('products.quantity < products.low_stock_qty');
+        }
+        $inventory = $inventory->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+        ->leftjoin('medicine_types', 'medicine_types.id', '=', 'medicines.medicine_type_id')
+        ->leftjoin('medicine_companies', 'medicines.company_id', '=', 'medicine_companies.id')
+        ->get();
 
         return response()->json(array(
             'data' => $inventory,
+            'summary' => $summary,
             'status' => 'Successful',
             'message' => 'Inventory List'
         ));

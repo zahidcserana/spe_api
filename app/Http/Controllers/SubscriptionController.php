@@ -147,7 +147,7 @@ class SubscriptionController extends Controller
     $user = $request->auth;
     $subscription = DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->first();
     if($subscription) {
-      DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update(['subscription_count'=>$request->count ?? 0]);
+      // DB::table('pharmacy_branches')->where('id', $user->pharmacy_branch_id)->update(['subscription_count'=>$request->count ?? 0]);
       return response()->json(['status'=>true]);
     }
     return response()->json(['status'=>false, 'message'=> 'Subscription Plan not found!']);

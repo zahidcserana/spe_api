@@ -11,11 +11,18 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    private $user;
+
+    public function __construct(Request $request)
+    {
+        $this->user = $request->auth;
+    }
+
     public function showAllUsers(Request $request)
     {
-      $user = $request->auth;
-      $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
-      return response()->json($users);
+        $user = $request->auth;
+        $users = User::where('pharmacy_branch_id', $user->pharmacy_branch_id)->get();
+        return response()->json($users);
     }
 
     public function create(Request $request)
@@ -43,24 +50,25 @@ class UserController extends Controller
         $data = $request->all();
         $user = User::findOrFail($data['user']);
         $input = array(
-          'password' => Hash::make($data['password']),
-          'updated_at' => date('Y-m-d H:i:s')
+            'password' => Hash::make($data['password']),
+            'updated_at' => date('Y-m-d H:i:s')
         );
         $user->update($input);
 
         return response()->json(['success' => true]);
     }
 
-    public function adminCheck(Request $request) {
-      $status = false;
-      if(!$request->email || !$request->password) {
-        return response()->json(['status' => $status ], 200);
-      }
-      $user = User::where('email', $request->email)->first();
-      if ($user && Hash::check($request->password, $user->password)) {
-        $status = true;
-      }
-      return response()->json(['status' => $status ], 200);
+    public function adminCheck(Request $request)
+    {
+        $status = false;
+        if (!$request->email || !$request->password) {
+            return response()->json(['status' => $status], 200);
+        }
+        $user = User::where('email', $request->email)->first();
+        if ($user && Hash::check($request->password, $user->password)) {
+            $status = true;
+        }
+        return response()->json(['status' => $status], 200);
     }
 
     public function sendPushNotification($title, $messageBody, $message, $imageUrl, $urlNeedsToOpen, $sendType)
@@ -90,14 +98,12 @@ class UserController extends Controller
                 'registration_ids' => $firebaseIds,
                 'data' => $res
             );
-
         } else { // Send to all
 
             $fields = array(
                 'to' => '/topics/global',
                 'data' => $res
             );
-
         }
 
         $headers = array(
@@ -156,7 +162,6 @@ class UserController extends Controller
         /** # Login credential # */
 
         return response()->json($user);
-
     }
     protected function jwt($user)
     {
@@ -184,7 +189,6 @@ class UserController extends Controller
             ->value('verification_pin');
 
         return response()->json(['code' => $userCode]);
-
     }
 
     public function update($id, Request $request)
@@ -203,12 +207,20 @@ class UserController extends Controller
         $phamracy_mr_connection = PharmacyMrConnection::create($request->all());
 
         return response()->json(['success' => true, 'data' => $phamracy_mr_connection]);
-
     }
 
-    public function test(){
+    public function test()
+    {
         dd('ok');
     }
 
+    public function destroy($userId)
+    {
+        if (User::destroy($userId)) {
+            $users = User::where('pharmacy_branch_id', $this->user->pharmacy_branch_id)->get();
 
+            return response()->json(['status' => true, 'data' => $users]);
+        }
+        return response()->json(['status' => false]);
+    }
 }

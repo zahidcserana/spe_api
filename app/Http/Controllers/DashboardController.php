@@ -47,15 +47,15 @@ class DashboardController extends Controller
             }
             $dateStart = $year . '-' . $i . '-01';
             $dateEnd = $year . '-' . $i . '-31';
-            if ($i == 1) {
+            if ($i == 2) {
                 $dateEnd = $year . '-' . $i . '-28';
-            } elseif ($i == 3) {
+            } elseif ($i == 4) {
                 $dateEnd = $year . '-' . $i . '-30';
-            } elseif ($i == 5) {
+            } elseif ($i == 6) {
                 $dateEnd = $year . '-' . $i . '-30';
-            } elseif ($i == 8) {
+            } elseif ($i == 9) {
                 $dateEnd = $year . '-' . $i . '-30';
-            } elseif ($i == 10) {
+            } elseif ($i == 11) {
                 $dateEnd = $year . '-' . $i . '-30';
             }
             $order = DB::table('orders')
