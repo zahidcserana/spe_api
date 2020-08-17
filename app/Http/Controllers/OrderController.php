@@ -2000,6 +2000,7 @@ class OrderController extends Controller
                 return $query->where('medicines.generic_name', 'like', $generic . '%');
             });
         
+            
         $summary['total_mrp'] = $inventory->sum('products.mrp');
         $summary['total_tp'] = $inventory->sum('products.tp');
         $summary['total_profit'] = $summary['total_mrp'] - $summary['total_tp'];
