@@ -26,6 +26,7 @@ $router->group(['prefix' => 'api'],
                 /** Users */
                 $router->post('users/admin/check', ['uses' => 'UserController@adminCheck']);
                 $router->post('users/{id}', ['uses' => 'UserController@update']);
+                $router->delete('users/{id}', ['uses' => 'UserController@destroy']);
 
                 /** MRs */
                 $router->post('mrs/{id}', ['uses' => 'MrController@update']);
@@ -65,6 +66,7 @@ $router->group(['prefix' => 'api'],
                 $router->get('carts/{token}', ['uses' => 'CartController@view']);
                 $router->get('carts/{token}/check', ['uses' => 'CartController@tokenCheck']);
                 $router->post('carts/delete-item', ['uses' => 'CartController@deleteItem']);
+                $router->get('carts/{token}/delete', ['uses' => 'CartController@destroy']);
                 $router->post('carts/quantity-update', ['uses' => 'CartController@quantityUpdate']);
                 $router->post('carts/price-update', ['uses' => 'CartController@priceUpdate']);
 

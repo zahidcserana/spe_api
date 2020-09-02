@@ -22,14 +22,13 @@ class CartController extends Controller
             'quantity' => 'required'
         ]);
         $cart = Cart::where('token', $data['token'])->first();
-        if($cart && CartItem::where('medicine_id',$data['medicine_id'])->where('cart_id', $cart->id)->first()) {
-          return response()->json(['success' => false, 'error' => 'Already added this item!']);
+        if ($cart && CartItem::where('medicine_id', $data['medicine_id'])->where('cart_id', $cart->id)->first()) {
+            return response()->json(['success' => false, 'error' => 'Already added this item!']);
         }
         $cartModel = new Cart();
         $cart = $cartModel->AddToCart($data, $user);
 
         return response()->json($cart);
-
     }
 
     public function view($cartToken)
@@ -60,29 +59,30 @@ class CartController extends Controller
         $data = $request->all();
         $item = CartItem::find($data['id'])->first();
         $product = DB::table('products')
-        ->select(DB::raw('SUM(quantity) as available_quantity'))
-        ->where('medicine_id', $item->medicine_id)
-        ->first();
+            ->select(DB::raw('SUM(quantity) as available_quantity'))
+            ->where('medicine_id', $item->medicine_id)
+            ->first();
 
-        if($data['increment'] == 1 && ($product->available_quantity < ($item->quantity + 1))) {
-          return response()->json(['success' => false, 'error' => 'Only ' . $product->available_quantity . ' Pcs is available']);
+        if ($data['increment'] == 1 && ($product->available_quantity < ($item->quantity + 1))) {
+            return response()->json(['success' => false, 'error' => 'Only ' . $product->available_quantity . ' Pcs is available']);
         }
         $cartModel = new Cart();
         $cartUpdate = $cartModel->quantityUpdate($data);
 
         return response()->json($cartUpdate);
     }
-    public function priceUpdate(Request $request){
-      $data = $request->all();
+    public function priceUpdate(Request $request)
+    {
+        $data = $request->all();
 
-      $this->validate($request, [
-          'item_id' => 'required',
-          'item_price' => 'required'
-      ]);
-      $cartModel = new Cart();
-      $cartUpdate = $cartModel->priceUpdate($data);
+        $this->validate($request, [
+            'item_id' => 'required',
+            'item_price' => 'required'
+        ]);
+        $cartModel = new Cart();
+        $cartUpdate = $cartModel->priceUpdate($data);
 
-      return response()->json($cartUpdate);
+        return response()->json($cartUpdate);
     }
 
     public function deleteItem(Request $request)
@@ -92,5 +92,16 @@ class CartController extends Controller
         $result = $cartItemModel->deleteItem($data);
 
         return response()->json($result);
+    }
+
+    public function destroy($token)
+    {
+        if ($cart = Cart::where('token', $token)->first()) {
+            Cart::destroy($cart->id);
+            CartItem::where(['cart_id' => $cart->id])->delete();
+
+            return response()->json(['status' => true]);
+        }
+        return response()->json(['status' => false]);
     }
 }
