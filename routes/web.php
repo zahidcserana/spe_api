@@ -4,7 +4,8 @@ $router->get('/', function () use ($router) {
     return $router->app->version();
 });
 
-$router->group(['prefix' => 'api'],
+$router->group(
+    ['prefix' => 'api'],
     function () use ($router) {
 
         $router->post('auth/login', ['uses' => 'Auth\AuthController@userAuthenticate']);
@@ -17,8 +18,12 @@ $router->group(['prefix' => 'api'],
         $router->post('users/pharmacy-mr', ['uses' => 'MrController@addMR']);
         $router->post('subscription-response', ['uses' => 'SubscriptionController@subscriptionResponse']);
 
-        $router->group(['middleware' => 'jwt.auth'],
+        $router->group(
+            ['middleware' => 'jwt.auth'],
             function () use ($router) {
+                /** Stock Balance */
+                $router->get('stock-balance', ['uses' => 'HomeController@stockBalance']);
+
                 $router->get('users', ['uses' => 'UserController@showAllUsers']);
                 $router->post('users', ['uses' => 'UserController@create']);
                 $router->post('users/password', ['uses' => 'UserController@password']);
@@ -194,10 +199,8 @@ $router->group(['prefix' => 'api'],
 
                 /** sales/persons/list */
                 $router->get('sales/persons/list', ['uses' => 'HomeController@getSalePersonsList']);
-
             }
         );
-
     }
 );
 /** Script for database migration */

@@ -14,11 +14,48 @@ use App\Models\Notification;
 use App\Models\InventoryDetail;
 use App\Models\MedicineType;
 use App\Models\MedicineCompany;
+use App\Models\StockBalance;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Date;
 
 class HomeController extends Controller
 {
+    public function stockBalance(Request $request)
+    {
+        $user = $request->auth;
+
+        $stockBalance = StockBalance::where('pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->whereNull('date_close')->whereNotNull('date_open')
+            ->latest()->first();
+
+        DB::beginTransaction();
+
+        try {
+            if (!$stockBalance) {
+                $stockBalance = new StockBalance();
+                $stockBalance->openStockItems($user, Date('Y-m-d'));
+
+                DB::commit();
+            } else {
+                $stockBalance->date_close = Date('Y-m-d');
+                $stockBalance->update();
+
+                $stockBalance->closeStockItems();
+
+                $stockBalance = new StockBalance();
+                $stockBalance->openStockItems($user, Date('Y-m-d', strtotime("+1 day")));
+
+                DB::commit();
+            }
+        } catch (\Throwable $th) {
+            DB::rollback();
+        }
+
+        return response()->json($stockBalance);
+    }
+
     public function summary(Request $request)
     {
         $user = $request->auth;
@@ -43,28 +80,29 @@ class HomeController extends Controller
         return response()->json($data);
     }
 
-    public function salePurchasSummary(Request $request) {
-      $user = $request->auth;
-      $sales = DB::table('sales')
-      ->select('medicine_companies.company_name as company', DB::raw('SUM(sale_items.sub_total) as amount'))
-      ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
-      ->join('medicine_companies', 'sale_items.company_id', '=', 'medicine_companies.id')
-      ->where('sales.pharmacy_branch_id', $user->pharmacy_branch_id)
-      ->groupBy('sale_items.company_id')
-      ->get();
+    public function salePurchasSummary(Request $request)
+    {
+        $user = $request->auth;
+        $sales = DB::table('sales')
+            ->select('medicine_companies.company_name as company', DB::raw('SUM(sale_items.sub_total) as amount'))
+            ->join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('medicine_companies', 'sale_items.company_id', '=', 'medicine_companies.id')
+            ->where('sales.pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->groupBy('sale_items.company_id')
+            ->get();
 
-      $orders = DB::table('orders')
-      ->select('medicine_companies.company_name as company', DB::raw('SUM(order_items.sub_total) as amount'))
-      ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-      ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
-      ->where('orders.pharmacy_branch_id', $user->pharmacy_branch_id)
-      ->groupBy('order_items.company_id')
-      ->get();
+        $orders = DB::table('orders')
+            ->select('medicine_companies.company_name as company', DB::raw('SUM(order_items.sub_total) as amount'))
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
+            ->where('orders.pharmacy_branch_id', $user->pharmacy_branch_id)
+            ->groupBy('order_items.company_id')
+            ->get();
 
-      $data['sale'] = $sales;
-      $data['purchase'] = $orders;
+        $data['sale'] = $sales;
+        $data['purchase'] = $orders;
 
-      return response()->json($data);
+        return response()->json($data);
     }
 
     public function statusSync($statusData)
@@ -147,7 +185,7 @@ class HomeController extends Controller
                         OrderItem::find($item->local_item_id)->update(['server_item_id' => $item->server_item_id]);
                     }
                 }
-                if(!empty($itemIds)){
+                if (!empty($itemIds)) {
                     DB::table('order_items')->whereIn('id', $itemIds)->update(array('is_status_sync' => 1));
                 }
             }
@@ -240,7 +278,7 @@ class HomeController extends Controller
             $order_items = $data['order_items'];
 
             if (sizeof($order_details)) {
-              // $this->imageUpload($order_details);
+                // $this->imageUpload($order_details);
 
                 $insert_order = new Sale();
 
@@ -316,12 +354,11 @@ class HomeController extends Controller
     }
     public function imageUpload($data)
     {
-      if ($data['file'])
-      {
-          $picture   = base64_decode($data['file']);
-          $dir = 'assets/prescription_image/'. $data['file_name'];
-          file_put_contents($dir, $picture);
-      }
+        if ($data['file']) {
+            $picture   = base64_decode($data['file']);
+            $dir = 'assets/prescription_image/' . $data['file_name'];
+            file_put_contents($dir, $picture);
+        }
     }
 
     public function dataSyncToDB(Request $request)
@@ -330,7 +367,7 @@ class HomeController extends Controller
         $data = json_decode(file_get_contents('php://input'), true);
         $inserted_items = [];
         $inserted_item_ids = [];
-        if(!empty($data['status_data'])){
+        if (!empty($data['status_data'])) {
             $statusData = $data['status_data'];
 
             $this->statusSync($statusData);
@@ -420,7 +457,8 @@ class HomeController extends Controller
     }
 
     public function awsData()
-    { }
+    {
+    }
     public function districtList()
     {
         $districts = DB::table('districts')->get();
@@ -486,10 +524,11 @@ class HomeController extends Controller
         return true;
     }
 
-    public function companyScript(){
+    public function companyScript()
+    {
         $items = OrderItem::all();
-        foreach($items as $item){
-           $order = Order::find($item->order_id)->update(['company_id'=>$item->company_id]);
+        foreach ($items as $item) {
+            $order = Order::find($item->order_id)->update(['company_id' => $item->company_id]);
         }
     }
 
@@ -503,14 +542,14 @@ class HomeController extends Controller
         $threeMonth = date('Y-m-d', strtotime('+3 month', strtotime(date('Y-m-d'))));
 
         $lowStoclItems = InventoryDetail::select('inventory_details.medicine_id', 'medicines.brand_name', 'inventory_details.exp_date')
-        ->where('inventory_details.quantity', '<',  10)
-        ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
-        ->get();
+            ->where('inventory_details.quantity', '<',  10)
+            ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
+            ->get();
 
-        foreach ($lowStoclItems as $item):
+        foreach ($lowStoclItems as $item) :
             $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'LOW_QTY')->get();
-            if(!sizeof($alreadyExist)){
-                $details = $item->brand_name. ', The stock quantity is bellow 10. Please update the stock!';
+            if (!sizeof($alreadyExist)) {
+                $details = $item->brand_name . ', The stock quantity is bellow 10. Please update the stock!';
                 $insertNotification = new Notification();
                 $insertNotification->category = "LOW_QTY";
                 $insertNotification->details = $details;
@@ -523,14 +562,14 @@ class HomeController extends Controller
         endforeach;
 
         $threeMonthItem = InventoryDetail::select('inventory_details.medicine_id', 'medicines.brand_name', 'inventory_details.exp_date')
-        ->whereBetween('inventory_details.exp_date', [$twoMonth, $threeMonth])
-        ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
-        ->get();
+            ->whereBetween('inventory_details.exp_date', [$twoMonth, $threeMonth])
+            ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
+            ->get();
 
-        foreach ($threeMonthItem as $item):
+        foreach ($threeMonthItem as $item) :
             $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'EXP_DATE')->get();
-            if(!sizeof($alreadyExist)){
-                $details = $item->brand_name. ', will be expired within three months!';
+            if (!sizeof($alreadyExist)) {
+                $details = $item->brand_name . ', will be expired within three months!';
                 $insertNotification = new Notification();
                 $insertNotification->category = 'EXP_DATE';
                 $insertNotification->details = $details;
@@ -543,13 +582,13 @@ class HomeController extends Controller
         endforeach;
 
         $twoMonthItem = InventoryDetail::select('inventory_details.medicine_id', 'medicines.brand_name', 'inventory_details.exp_date')
-        ->whereBetween('inventory_details.exp_date', [$oneMonth, $twoMonth])
-        ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
-        ->get();
+            ->whereBetween('inventory_details.exp_date', [$oneMonth, $twoMonth])
+            ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
+            ->get();
 
-        foreach ($twoMonthItem as $item):
+        foreach ($twoMonthItem as $item) :
             $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'EXP_DATE')->get();
-            if(!sizeof($alreadyExist)){
+            if (!sizeof($alreadyExist)) {
                 $details = $item->brand_name . ', will be expired within two months!';
                 $insertNotification = new Notification();
                 $insertNotification->category = "EXP_DATE";
@@ -563,14 +602,14 @@ class HomeController extends Controller
         endforeach;
 
         $oneMonthItem = InventoryDetail::select('inventory_details.medicine_id', 'medicines.brand_name', 'inventory_details.exp_date')
-        ->whereBetween('inventory_details.exp_date', [date('Y-m-d'), $oneMonth])
-        ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
-        ->get();
+            ->whereBetween('inventory_details.exp_date', [date('Y-m-d'), $oneMonth])
+            ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
+            ->get();
 
-        foreach ($oneMonthItem as $item):
+        foreach ($oneMonthItem as $item) :
             $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'EXP_DATE')->get();
-            if(!sizeof($alreadyExist)){
-                $details = $item->brand_name. ', will be expired within one month!';
+            if (!sizeof($alreadyExist)) {
+                $details = $item->brand_name . ', will be expired within one month!';
                 $insertNotification = new Notification();
                 $insertNotification->category = "EXP_DATE";
                 $insertNotification->details = $details;
@@ -583,14 +622,14 @@ class HomeController extends Controller
         endforeach;
 
         $expiredItem = InventoryDetail::select('inventory_details.medicine_id', 'medicines.brand_name', 'inventory_details.exp_date')
-        ->where('inventory_details.exp_date', '<',  date('Y-m-d'))
-        ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
-        ->get();
+            ->where('inventory_details.exp_date', '<',  date('Y-m-d'))
+            ->leftjoin('medicines', 'medicines.id', '=', 'inventory_details.medicine_id')
+            ->get();
 
-        foreach ($expiredItem as $item):
+        foreach ($expiredItem as $item) :
             $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'EXP_DATE')->get();
-            if(!sizeof($alreadyExist)){
-                $details = $item->brand_name. ', has been expired! Please through this item to trush!';
+            if (!sizeof($alreadyExist)) {
+                $details = $item->brand_name . ', has been expired! Please through this item to trush!';
                 $insertNotification = new Notification();
                 $insertNotification->category = "EXP_DATE";
                 $insertNotification->details = $details;
@@ -614,14 +653,14 @@ class HomeController extends Controller
         $pharmacy_branch_id = $user->pharmacy_branch_id;
 
         $lowStoclItems = Product::select('products.medicine_id', 'medicines.brand_name', 'products.exp_date', 'products.low_stock_qty', 'products.quantity')
-        ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
-        ->get();
+            ->leftjoin('medicines', 'medicines.id', '=', 'products.medicine_id')
+            ->get();
 
-        foreach ($lowStoclItems as $item):
-            if($item->low_stock_qty >= $item->quantity){
+        foreach ($lowStoclItems as $item) :
+            if ($item->low_stock_qty >= $item->quantity) {
                 $alreadyExist = Notification::where('medicine_id', $item->medicine_id)->where('notification_date', date('Y-m-d'))->where('category', 'LOW_QTY')->get();
-                if(!sizeof($alreadyExist)){
-                    $details = $item->brand_name. ', The stock quantity is bellow 100. Please update the stock!';
+                if (!sizeof($alreadyExist)) {
+                    $details = $item->brand_name . ', The stock quantity is bellow 100. Please update the stock!';
                     $insertNotification = new Notification();
                     $insertNotification->category = "LOW_QTY";
                     $insertNotification->details = $details;
@@ -638,10 +677,10 @@ class HomeController extends Controller
     public function getAllNotificationList(Request $request)
     {
         $notifications = Notification::select('notifications.id', 'notifications.category', 'notifications.details', 'notifications.notification_date', 'notifications.is_read', 'notifications.importance', 'medicines.brand_name')
-        ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
-        ->orderby('notifications.id', 'DESC')
-        ->take(150)
-        ->get();
+            ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
+            ->orderby('notifications.id', 'DESC')
+            ->take(150)
+            ->get();
 
         return response()->json(array(
             'data' => $notifications,
@@ -652,10 +691,10 @@ class HomeController extends Controller
     public function getNotificationList(Request $request)
     {
         $notifications = Notification::select('notifications.id', 'notifications.category', 'notifications.details', 'notifications.notification_date', 'notifications.is_read', 'notifications.importance', 'medicines.brand_name')
-        ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
-        ->orderby('notifications.id', 'DESC')
-        ->take(10)
-        ->get();
+            ->leftjoin('medicines', 'medicines.id', '=', 'notifications.medicine_id')
+            ->orderby('notifications.id', 'DESC')
+            ->take(10)
+            ->get();
 
         return response()->json(array(
             'data' => $notifications,
@@ -663,13 +702,14 @@ class HomeController extends Controller
         ));
     }
 
-    public function getSalePersonsList(Request $request){
+    public function getSalePersonsList(Request $request)
+    {
         $user = $request->auth;
         $pharmacy_id = $user->pharmacy_id;
         $pharmacy_branch_id = $user->pharmacy_branch_id;
 
         $userList = User::select('id', 'name', 'email')->where('pharmacy_id', $pharmacy_id)->where('pharmacy_branch_id', $pharmacy_branch_id)
-        ->get();
+            ->get();
 
         return response()->json(array(
             'data' => $userList,
@@ -677,10 +717,11 @@ class HomeController extends Controller
         ));
     }
 
-    public function updateMedicineDetails(){
+    public function updateMedicineDetails()
+    {
         $medicineDetails = Beximco::all();
 
-        foreach ($medicineDetails as $medicine):
+        foreach ($medicineDetails as $medicine) :
             $med_id = $medicine->med_id;
             $med_TP = $medicine->med_TP;
             $med_VAT = $medicine->med_VAT;
@@ -694,21 +735,21 @@ class HomeController extends Controller
             $med_strength = $medicine->med_strength;
 
             $UpdateMedicine = Medicine::find($med_id);
-            if(sizeof($UpdateMedicine)){
+            if (sizeof($UpdateMedicine)) {
                 $UpdateMedicine->brand_name  = $med_name;
-                $UpdateMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box :0;
+                $UpdateMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box : 0;
                 $UpdateMedicine->tp_per_box  = $med_TP ? $med_TP : 0;
                 $UpdateMedicine->vat_per_box = $med_VAT ? $med_VAT : 0;
                 $UpdateMedicine->mrp_per_box = $med_MRP ? $med_MRP : 0;
                 $UpdateMedicine->save();
-            }else{
-                if(!$med_id){
+            } else {
+                if (!$med_id) {
 
                     $company = MedicineCompany::where('company_name', 'like', $med_company)->get();
 
-                    if(sizeof($company)){
+                    if (sizeof($company)) {
                         $company_id = $company[0]->id;
-                    }else{
+                    } else {
                         $addCompany = new MedicineCompany();
                         $addCompany->company_name = $med_company;
                         $addCompany->save();
@@ -717,9 +758,9 @@ class HomeController extends Controller
 
                     $MedicineType = MedicineType::where('name', 'like', $med_type)->get();
 
-                    if(sizeof($MedicineType)){
+                    if (sizeof($MedicineType)) {
                         $type_id = $MedicineType[0]->id;
-                    }else{
+                    } else {
                         $addCPType = new MedicineType();
                         $addCPType->name = $med_type;
                         $addCPType->save();
@@ -728,12 +769,12 @@ class HomeController extends Controller
 
                     $AddMedicine = new Medicine();
                     $AddMedicine->brand_name  = $med_name;
-                    $AddMedicine->generic_name= $med_generic;
+                    $AddMedicine->generic_name = $med_generic;
                     $AddMedicine->strength    = $med_strength;
                     $AddMedicine->company_id  = $company_id;
                     $AddMedicine->medicine_type_id = $type_id;
                     $AddMedicine->brand_name  = $med_name;
-                    $AddMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box :0;
+                    $AddMedicine->pcs_per_box = $med_qty_per_box ? $med_qty_per_box : 0;
                     $AddMedicine->tp_per_box  = $med_TP ? $med_TP : 0;
                     $AddMedicine->vat_per_box = $med_VAT ? $med_VAT : 0;
                     $AddMedicine->mrp_per_box = $med_MRP ? $med_MRP : 0;
