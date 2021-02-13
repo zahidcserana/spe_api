@@ -131,6 +131,12 @@ class OrderItem extends Model
         return $this->belongsTo('App\Models\Medicine');
     }
 
+    public function order()
+    {
+        return $this->belongsTo('App\Models\Order');
+    }
+
+
     public function company()
     {
         return $this->belongsTo('App\Models\MedicineCompany');

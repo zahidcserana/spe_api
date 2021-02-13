@@ -331,6 +331,11 @@ class Order extends Model
         return $this->hasMany('App\Models\OrderItem');
     }
 
+    public function orderItems()
+    {
+        return $this->hasMany('App\Models\OrderItem');
+    }
+
     public function PharmacyBranch()
     {
         return $this->belongsTo('App\Models\PharmacyBranch');

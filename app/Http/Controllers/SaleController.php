@@ -244,6 +244,7 @@ class SaleController extends Controller
     {
         $orderModel = new Sale();
         $order = DB::table('sales')->where('id', $saleId)->first();
+
         if(empty($order)){
           $data['order_items'] = [];
           return response()->json($data);

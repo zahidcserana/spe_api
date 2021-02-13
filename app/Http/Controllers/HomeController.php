@@ -22,40 +22,6 @@ use Illuminate\Support\Facades\Date;
 
 class HomeController extends Controller
 {
-    public function stockBalance(Request $request)
-    {
-        $user = $request->auth;
-
-        $stockBalance = StockBalance::where('pharmacy_branch_id', $user->pharmacy_branch_id)
-            ->whereNull('date_close')->whereNotNull('date_open')
-            ->latest()->first();
-
-        DB::beginTransaction();
-
-        try {
-            if (!$stockBalance) {
-                $stockBalance = new StockBalance();
-                $stockBalance->openStockItems($user, Date('Y-m-d'));
-
-                DB::commit();
-            } else {
-                $stockBalance->date_close = Date('Y-m-d');
-                $stockBalance->update();
-
-                $stockBalance->closeStockItems();
-
-                $stockBalance = new StockBalance();
-                $stockBalance->openStockItems($user, Date('Y-m-d', strtotime("+1 day")));
-
-                DB::commit();
-            }
-        } catch (\Throwable $th) {
-            DB::rollback();
-        }
-
-        return response()->json($stockBalance);
-    }
-
     public function summary(Request $request)
     {
         $user = $request->auth;

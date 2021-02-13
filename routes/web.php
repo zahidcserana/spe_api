@@ -22,7 +22,8 @@ $router->group(
             ['middleware' => 'jwt.auth'],
             function () use ($router) {
                 /** Stock Balance */
-                $router->get('stock-balance', ['uses' => 'HomeController@stockBalance']);
+                $router->get('stock-balance-create', ['uses' => 'StockBalanceController@stockBalance']);
+                $router->get('stock-balances', ['uses' => 'StockBalanceController@index']);
 
                 $router->get('users', ['uses' => 'UserController@showAllUsers']);
                 $router->post('users', ['uses' => 'UserController@create']);

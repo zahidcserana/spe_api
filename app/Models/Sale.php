@@ -35,6 +35,7 @@ class Sale extends Model
             'total_due_amount' => $data['total_due_amount'],
             'total_payble_amount' => $data['sub_total'] - $data['discount'],
             'remarks' => $cartData->remarks,
+            'sale_date' => date('Y-m-d'),
             'created_at' => date('Y-m-d H:i:s'),
             'status' => $data['total_due_amount'] > 0 ? 'DUE' : 'COMPLETE'
         );
@@ -141,6 +142,7 @@ class Sale extends Model
         $order = $this::findOrFail($orderId);
 
         $orderItems = $order->items()->where('return_status', '<>', 'RETURN')->get();
+
         $data = array();
         $data['order_id'] = $order->id;
         $data['token'] = $order->token;

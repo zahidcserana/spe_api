@@ -8,15 +8,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Medicine extends Model
 {
   use SoftDeletes;
+
   protected $guarded = [];
 
   public function medicineType()
   {
-      return $this->belongsTo('App\Models\MedicineType');
+    return $this->belongsTo('App\Models\MedicineType');
   }
 
   public function company()
   {
-      return $this->belongsTo('App\Models\MedicineCompany');
+    return $this->belongsTo('App\Models\MedicineCompany');
+  }
+
+  public function stockBalanceItems()
+  {
+    return $this->hasMany(StockBalanceItem::class, 'product_id');
   }
 }
