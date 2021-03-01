@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cart;
-use App\Models\Medicine;
-use App\Models\MedicineCompany;
-use App\Models\Sale;
-use App\Models\OrderItem;
-use App\Models\SaleItem;
-use App\Models\CartItem;
-use App\Models\PaymentType;
-use Barryvdh\DomPDF\PDF;
 use DateTime;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
 use Validator;
+use App\Models\Cart;
+use App\Models\Sale;
+use App\Models\Order;
+use App\Models\CartItem;
+use App\Models\Medicine;
+use App\Models\SaleItem;
+use Barryvdh\DomPDF\PDF;
+use App\Models\OrderItem;
+use App\Models\PaymentType;
+use Illuminate\Http\Request;
+use App\Models\MedicineCompany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\App;
 
 class SaleController extends Controller
 {
