@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\Order;
-use App\Models\Medicine;
 use App\Models\CartItem;
+use App\Models\Medicine;
 use App\Models\SaleItem;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
@@ -14,89 +15,99 @@ use Illuminate\Support\Facades\DB;
 
 class MedicineController extends Controller
 {
-    public function medicineWithExpiredDate(Request $request) {
-      $data = $request->query();
-      $pageNo = $request->query('page_no') ?? 1;
-      $limit = $request->query('limit') ?? 500;
-      $offset = (($pageNo - 1) * $limit);
-      $where = array();
-      $user = $request->auth;
-      $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
-      $where = array_merge(array(['order_items.exp_date', '<>' ,'1970-01-01']), $where);
+    public function medicineWithExpiredDate(Request $request)
+    {
+        $data = $request->query();
+        $pageNo = $request->query('page_no') ?? 1;
+        $limit = $request->query('limit') ?? 500;
+        $offset = (($pageNo - 1) * $limit);
+        $where = array();
+        $user = $request->auth;
+        $where = array_merge(array(['orders.pharmacy_branch_id', $user->pharmacy_branch_id]), $where);
+        $where = array_merge(array(['order_items.exp_date', '<>', '1970-01-01']), $where);
 
-      if (!empty($data['medicine_id'])) {
-          $where = array_merge(array(['order_items.medicine_id', $data['medicine_id']]), $where);
-      }
-      if (!empty($data['company_id'])) {
-          $where = array_merge(array(['order_items.company_id', $data['company_id']]), $where);
-      }
-      if (!empty($data['exp_type'])) {
+        if (!empty($data['medicine_id'])) {
+            $where = array_merge(array(['order_items.medicine_id', $data['medicine_id']]), $where);
+        }
+        if (!empty($data['company_id'])) {
+            $where = array_merge(array(['order_items.company_id', $data['company_id']]), $where);
+        }
+        if (!empty($data['exp_type'])) {
             $where = $this->_getExpType($where, $data['exp_type']);
-      }
-      if (!empty($data['expiry_date'])) {
-          $dateRange = explode(',',$data['expiry_date']);
-          // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
-          $where = array_merge(array([DB::raw('DATE(exp_date)'), '>=', $dateRange[0]]), $where);
-          $where = array_merge(array([DB::raw('DATE(exp_date)'), '<=', $dateRange[1]]), $where);
-      }
-      $query = DB::table('orders')
-      ->select('medicine_companies.company_name as company', 'medicines.brand_name', 'medicines.strength', 'medicine_types.name as type',
-      'order_items.batch_no', 'order_items.exp_date',DB::raw('(order_items.quantity * order_items.pieces_per_box) AS qty'), DB::raw('DATE_FORMAT(order_items.created_at, "%Y-%m-%d") as purchase_date'))
-      ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-      ->join('medicines', 'order_items.medicine_id', '=', 'medicines.id')
-      ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
-      ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
-      ->where($where);
-      $total = $query->count();
-      $items = $query
-          ->orderBy('order_items.exp_date', 'desc')
-          ->offset($offset)
-          ->limit($limit)
-          ->get();
+        }
+        if (!empty($data['expiry_date'])) {
+            $dateRange = explode(',', $data['expiry_date']);
+            // $query = Sale::where($where)->whereBetween('created_at', $dateRange);
+            $where = array_merge(array([DB::raw('DATE(exp_date)'), '>=', $dateRange[0]]), $where);
+            $where = array_merge(array([DB::raw('DATE(exp_date)'), '<=', $dateRange[1]]), $where);
+        }
+        $query = DB::table('orders')
+            ->select(
+                'medicine_companies.company_name as company',
+                'medicines.brand_name',
+                'medicines.strength',
+                'medicine_types.name as type',
+                'order_items.batch_no',
+                'order_items.exp_date',
+                DB::raw('(order_items.quantity * order_items.pieces_per_box) AS qty'),
+                DB::raw('DATE_FORMAT(order_items.created_at, "%Y-%m-%d") as purchase_date')
+            )
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('medicines', 'order_items.medicine_id', '=', 'medicines.id')
+            ->join('medicine_types', 'medicines.medicine_type_id', '=', 'medicine_types.id')
+            ->join('medicine_companies', 'order_items.company_id', '=', 'medicine_companies.id')
+            ->where($where);
+        $total = $query->count();
+        $items = $query
+            ->orderBy('order_items.exp_date', 'desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
-      foreach ($items as $item) {
-        $item->exp_status = $this->_getExpStatus($item->exp_date);
-        $item->exp_condition = $this->_getExpCondition($item->exp_date);
-      }
-      $data = array(
-          'total' => $total,
-          'data' => $items,
-          'page_no' => $pageNo,
-          'limit' => $limit,
-      );
-      return response()->json($data);
+        foreach ($items as $item) {
+            $item->exp_status = $this->_getExpStatus($item->exp_date);
+            $item->exp_condition = $this->_getExpCondition($item->exp_date);
+        }
+        $data = array(
+            'total' => $total,
+            'data' => $items,
+            'page_no' => $pageNo,
+            'limit' => $limit,
+        );
+        return response()->json($data);
     }
 
-    public function getExpiryMedicine(){
+    public function getExpiryMedicine()
+    {
         $today = date('Y-m-d');
         $exp1M = date('Y-m-d', strtotime("+1 months", strtotime(date('Y-m-d'))));
         $exp3M = date('Y-m-d', strtotime("+3 months", strtotime(date('Y-m-d'))));
-        
-        $medicine_list = OrderItem::where('exp_date', '<>' ,'1970-01-01')->get();
+
+        $medicine_list = OrderItem::where('exp_date', '<>', '1970-01-01')->get();
 
         $all_expired = $medicine_list->where('exp_date', '<', date('Y-m-d'))->count();
         $expired_one_month = $medicine_list->where('exp_date', '>', date('Y-m-d'))->where('exp_date', '<', $exp1M)->count();
         $expired_three_month = OrderItem::where('exp_date', '>', $exp1M)->where('exp_date', '<', $exp3M)->get()->count();
 
         $all_expired_list = OrderItem::select('order_items.exp_date', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength')
-        ->where('order_items.exp_date', '<>' ,'1970-01-01')
-        ->where('order_items.exp_date', '<', date('Y-m-d'))
-        ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
-        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
-        ->get();
+            ->where('order_items.exp_date', '<>', '1970-01-01')
+            ->where('order_items.exp_date', '<', date('Y-m-d'))
+            ->leftjoin('medicines', 'medicines.id', '=', 'order_items.medicine_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'order_items.company_id')
+            ->get();
 
         $all_sell_item = SaleItem::select('sale_items.medicine_id', 'sale_items.company_id', 'medicine_companies.company_name', 'medicines.brand_name', 'medicines.generic_name', 'medicines.strength', DB::raw('SUM(sale_items.quantity) as quantity'))
-        ->leftjoin('medicines', 'medicines.id', '=', 'sale_items.medicine_id')
-        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
-        ->groupBy('sale_items.medicine_id')
-        ->orderBy('quantity', 'DESC')
-        ->get();
+            ->leftjoin('medicines', 'medicines.id', '=', 'sale_items.medicine_id')
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
+            ->groupBy('sale_items.medicine_id')
+            ->orderBy('quantity', 'DESC')
+            ->get();
 
         $top_company = SaleItem::select('sale_items.company_id', 'medicine_companies.company_name', DB::raw('SUM(sale_items.sub_total) as amount'))
-        ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
-        ->groupBy('sale_items.company_id')
-        ->orderBy('amount', 'DESC')
-        ->get();
+            ->leftjoin('medicine_companies', 'medicine_companies.id', '=', 'sale_items.company_id')
+            ->groupBy('sale_items.company_id')
+            ->orderBy('amount', 'DESC')
+            ->get();
 
         $data = array(
             'top_company' => $top_company->take(5),
@@ -179,7 +190,7 @@ class MedicineController extends Controller
             ->when($company_id, function ($query, $company_id) {
                 return $query->where('company_id', $company_id);
             })
-            ->orderBy('brand_name','asc')
+            ->orderBy('brand_name', 'asc')
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {
@@ -198,16 +209,16 @@ class MedicineController extends Controller
         $medicines = Medicine::where('brand_name', 'like', $str . '%')
             ->orWhere('barcode', 'like', $str . '%')
             ->when($pharmacyMedicineIds, function ($query, $pharmacyMedicineIds) {
-                   return $query->whereIn('id', $pharmacyMedicineIds);
-               })
-            ->orderBy('brand_name','asc')
+                return $query->whereIn('id', $pharmacyMedicineIds);
+            })
+            ->orderBy('brand_name', 'asc')
             ->get();
         $data = array();
         foreach ($medicines as $medicine) {
             $company = DB::table('medicine_companies')->where('id', $medicine->company_id)->first();
             $medicineType = $medicine->product_type == 1 ? $medicine->medicineType->name : ' CP';
             $medicineStr = $medicine->brand_name . ' (' . $medicine->strength . ',' . $medicineType . ')';
-            $data[] = ['id'=>$medicine->id, 'name' => $medicineStr, 'company' => $company->company_name];
+            $data[] = ['id' => $medicine->id, 'name' => $medicineStr, 'company' => $company->company_name];
         }
         return response()->json($data);
     }
@@ -246,19 +257,20 @@ class MedicineController extends Controller
     public function getAvailableQuantity(Request $request)
     {
         $product = DB::table('products')
-        ->select(DB::raw('SUM(quantity) as available_quantity'))
-        ->where('medicine_id', $request->input('medicine_id'))
-        ->first();
+            ->select(DB::raw('SUM(quantity) as available_quantity'))
+            ->where('medicine_id', $request->input('medicine_id'))
+            ->first();
 
         $cartItem = new CartItem();
         $cartItem = $cartItem
             ->select(DB::raw('SUM(quantity) as total_quantity'))
             ->where('medicine_id', $request->input('medicine_id'))
+            ->whereDate('created_at', Carbon::today())
             ->first();
-        if($cartItem) {
-          $available = $product->available_quantity - $cartItem->total_quantity;
+        if ($cartItem) {
+            $available = $product->available_quantity - $cartItem->total_quantity;
         }
-        return response()->json(['available_quantity'=>$available]);
+        return response()->json(['available_quantity' => $available]);
     }
 
     public function searchByCompany(Request $request)
